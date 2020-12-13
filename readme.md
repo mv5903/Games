@@ -5,7 +5,7 @@ In this repository, I will be creating games for myself and friends, coded in a 
 #### Here are the games I am working on:
 - Poker in Java
 
-#### Here are the games I have comppleted:
+#### Here are the games I have completed:
 - (None yet!)
 
 Stay tuned for releases, where I will release my games for you to download, free of charge. 
