@@ -1,19 +1,15 @@
 package poker;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collections;
 
 public class UniqueHands implements Constants {
-
+	// ♠
 	public static String[] orderOfHand = { "RoyalFlush", "StraightFlush", "FourOfAKind", "FullHouse", "Flush",
 			"Straight", "ThreeOfAKind", "TwoPair", "Pair", "HighCard" };
 
 	public static String hasWhichHand(ArrayList<Card> cards) {
 		cards = sortCardsBySuit(cards);
-		System.out.println(cards);
 		if (hasRoyalFlush(cards)) {
 			return "Royal Flush";
 		} else if (hasStraightFlush(cards)) {
@@ -35,9 +31,9 @@ public class UniqueHands implements Constants {
 		} else {
 			return "High Card";
 		}
-		
+
 	}
-	
+
 	public static ArrayList<Card> sortCardsByNumber(ArrayList<Card> cards) {
 		Card minimum;
 		int minIndex;
@@ -56,15 +52,15 @@ public class UniqueHands implements Constants {
 		}
 		return cards;
 	}
-	
+
 	public static ArrayList<Card> sortCardsBySuit(ArrayList<Card> cards) {
-		//Sorted by suit, lowest to highest
+		// Sorted by suit, lowest to highest
 		ArrayList<Card> clubs = new ArrayList<Card>();
 		ArrayList<Card> diamonds = new ArrayList<Card>();
 		ArrayList<Card> hearts = new ArrayList<Card>();
 		ArrayList<Card> spades = new ArrayList<Card>();
-		
-		for (Card c: cards) {
+
+		for (Card c : cards) {
 			if (c.getSuit().equalsIgnoreCase(CLUBS)) {
 				clubs.add(c);
 			} else if (c.getSuit().equalsIgnoreCase(DIAMONDS)) {
@@ -82,9 +78,9 @@ public class UniqueHands implements Constants {
 		sorted.addAll(spades);
 		return sorted;
 	}
-	
+
 	public static boolean hasRoyalFlush(ArrayList<Card> cards) {
-		if (hasFlush(cards) && hasStraight(cards)) {
+		if (hasStraightFlush(cards)) {
 			cards = sortCardsByNumber(cards);
 			if (isAce(getHighStraightCard(cards))) {
 				return true;
@@ -92,78 +88,86 @@ public class UniqueHands implements Constants {
 		}
 		return false;
 	}
-	
+
 	public static boolean hasStraightFlush(ArrayList<Card> cards) {
-		if (!hasStraight(cards) || !hasFlush(cards)) return false;
-		
+		if (!hasStraight(cards) || !hasFlush(cards))
+			return false;
+		cards = sortCardsByNumber(cards);
 		// Check straight
 		ArrayList<Card> straightCards = new ArrayList<Card>();
 		boolean straight = false;
-		for (int i = 0; i < cards.size() - 4; i++) {
+		for (int i = cards.size() - 5; i >= 0; i--) {
 			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
 					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
 					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
 					&& cards.get(i + 1).getFaceValue() - cards.get(i).getFaceValue() == 1;
 			if (straight) {
 				straightCards.add(cards.get(i));
-				straightCards.add(cards.get(i+1));
-				straightCards.add(cards.get(i+2));
-				straightCards.add(cards.get(i+3));
-				straightCards.add(cards.get(i+4));
+				straightCards.add(cards.get(i + 1));
+				straightCards.add(cards.get(i + 2));
+				straightCards.add(cards.get(i + 3));
+				straightCards.add(cards.get(i + 4));
 				break;
 			}
 		}
+
 		return hasFlush(straightCards);
 	}
-	
+
 	public static boolean hasFourOfAKind(ArrayList<Card> cards) {
 		cards = sortCardsByNumber(cards);
-		
-		
+		Collections.reverse(cards);
+		for (int i = 0; i < cards.size() - 3; i++) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()
+					&& cards.get(i + 1).getFaceValue() == cards.get(i + 2).getFaceValue()
+					&& cards.get(i + 2).getFaceValue() == cards.get(i + 3).getFaceValue()) {
+				return true;
+			}
+		}
+
 		return false;
 	}
 
 	public static boolean hasFullHouse(ArrayList<Card> cards) {
-		// Find pair
-		Card pair = cards.get(0);
-		boolean hasPair = false;
-		for (int i = 0; i < cards.size(); i++) {
-			for (int j = 0; j < cards.size(); j++) {
-				if (cards.get(i).equals(cards.get(j)) && i != j) {
-					pair = cards.get(i);
-					hasPair = true;
-				}
+		// Find three of a kind
+		ArrayList<Card> temp = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		for (Card c : cards) {
+			temp.add(c);
+		}
+
+		for (int i = temp.size() - 3; i >= 0; i--) {
+			if (temp.get(i).getFaceValue() == temp.get(i + 1).getFaceValue()
+					&& temp.get(i + 1).getFaceValue() == temp.get(i + 2).getFaceValue()) {
+				temp.remove(i);
+				temp.remove(i);
+				temp.remove(i);
+				break;
+			}
+			if (i == 0) {
+				return false;
 			}
 		}
-		if (!hasPair)
-			return false;
-		// Find three of a kind and see if they are not the same
-		for (int i = 0; i < cards.size(); i++) {
-			for (int j = 0; j < cards.size(); j++) {
-				for (int k = 0; k < cards.size(); k++) {
-					if (cards.get(i).equals(cards.get(j)) && cards.get(j).equals(cards.get(k)) && i != j && j != k) {
-						if (!cards.get(i).equals(pair)) {
-							return true;
-						}
-					}
-				}
-			}
-		}
-		return false;
+		return hasPair(temp);
 	}
 
 	public static boolean hasFlush(ArrayList<Card> cards) {
+		cards = sortCardsBySuit(cards);
 		for (int i = 0; i < cards.size() - 4; i++) {
-			if (cards.get(i).getSuit().equals(cards.get(i+1).getSuit()) && cards.get(i+1).getSuit().equals(cards.get(i+2).getSuit()) && cards.get(i+2).getSuit().equals(cards.get(i+3).getSuit()) && cards.get(i+3).getSuit().equals(cards.get(i+4).getSuit())) {
+			if (cards.get(i).getSuit().equals(cards.get(i + 1).getSuit())
+					&& cards.get(i + 1).getSuit().equals(cards.get(i + 2).getSuit())
+					&& cards.get(i + 2).getSuit().equals(cards.get(i + 3).getSuit())
+					&& cards.get(i + 3).getSuit().equals(cards.get(i + 4).getSuit())) {
 				return true;
 			}
-		}	
+		}
 		return false;
 	}
 
 	public static boolean hasStraight(ArrayList<Card> cards) {
+		cards = sortCardsByNumber(cards);
 		boolean straight = false;
-		for (int i = 0; i < cards.size() - 4; i++) {
+		for (int i = cards.size() - 5; i >= 0; i--) {
 			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
 					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
 					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
@@ -171,10 +175,10 @@ public class UniqueHands implements Constants {
 		}
 		return straight;
 	}
-	
+
 	public static Card getHighStraightCard(ArrayList<Card> cards) {
 		boolean straight = false;
-		boolean[] straightIndexes = {false, false, false};
+		boolean[] straightIndexes = { false, false, false };
 		for (int i = 0; i < cards.size() - 4; i++) {
 			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
 					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
@@ -197,47 +201,37 @@ public class UniqueHands implements Constants {
 	}
 
 	public static boolean hasThreeOfAKind(ArrayList<Card> cards) {
-		for (int i = 0; i < cards.size(); i++) {
-			for (int j = 0; j < cards.size(); j++) {
-				for (int k = 0; k < cards.size(); k++) {
-					if (i != j && j != k && cards.get(i).equals(cards.get(j)) && cards.get(j).equals(cards.get(k))) {
-						return true;
-					}
-				}
+		cards = sortCardsByNumber(cards);
+		for (int i = cards.size() - 3; i >= 0; i--) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()
+					&& cards.get(i + 1).getFaceValue() == cards.get(i + 2).getFaceValue()) {
+				return true;
 			}
 		}
 		return false;
 	}
 
 	public static boolean hasTwoPair(ArrayList<Card> cards) {
-		boolean hasAPair = false;
-		Card pairCard = new Card(0, 0);
-		for (int i = 0; i < cards.size(); i++) {
-			for (int j = 0; j < cards.size(); j++) {
-				if (i == j) {
-					continue;
-				}
-				if (hasAPair && cards.get(i).equals(cards.get(j)) && !cards.get(i).equals(pairCard)) {
-					return true;
-				}
-				if (!hasAPair && cards.get(i).equals(cards.get(j))) {
-					pairCard = cards.get(i);
-					hasAPair = true;
-				}
+		ArrayList<Card> minusFirstPair = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		for (Card c : cards) {
+			minusFirstPair.add(c);
+		}
+		for (int i = minusFirstPair.size() - 2; i >= 0; i--) {
+			if (minusFirstPair.get(i).getFaceValue() == minusFirstPair.get(i + 1).getFaceValue()) {
+				minusFirstPair.remove(i);
+				minusFirstPair.remove(i);
+				break;
 			}
 		}
-		return false;
+		return hasPair(minusFirstPair);
 	}
 
 	public static boolean hasPair(ArrayList<Card> cards) {
-		for (int i = 0; i < cards.size(); i++) {
-			for (int j = 0; j < cards.size(); j++) {
-				if (i == j) {
-					continue;
-				}
-				if (cards.get(i).equals(cards.get(j))) {
-					return true;
-				}
+		cards = sortCardsByNumber(cards);
+		for (int i = cards.size() - 2; i >= 0; i--) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()) {
+				return true;
 			}
 		}
 		return false;
@@ -252,8 +246,9 @@ public class UniqueHands implements Constants {
 		}
 		return highest;
 	}
-	
+
 	public static boolean isAce(Card c) {
-		return c.equals(new Card(14, 1)) || c.equals(new Card(14, 2)) || c.equals(new Card(14, 3)) || c.equals(new Card(14, 0));
+		return c.equals(new Card(14, 1)) || c.equals(new Card(14, 2)) || c.equals(new Card(14, 3))
+				|| c.equals(new Card(14, 0));
 	}
 }

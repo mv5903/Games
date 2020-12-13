@@ -1,5 +1,5 @@
 package poker;
-
+// ♠
 public class Bet implements Constants {
 	private int balance;
 	private static Pot pot = new Pot();

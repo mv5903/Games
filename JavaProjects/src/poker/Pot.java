@@ -1,5 +1,5 @@
 package poker;
-
+//♠
 public class Pot {
 	private int amount;
 	
