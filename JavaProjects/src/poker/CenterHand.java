@@ -5,10 +5,9 @@ import java.util.ArrayList;
 public class CenterHand {
 	private ArrayList<Card> hand = new ArrayList<Card>();
 	
-	public CenterHand(Card a, Card b, Card c) {
+	public CenterHand(Card a, Card b) {
 		hand.add(a);
 		hand.add(b);
-		hand.add(c);
 	}
 	
 	public ArrayList<Card> getCenter() {
