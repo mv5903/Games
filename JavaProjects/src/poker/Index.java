@@ -15,10 +15,11 @@ public class Index {
 	static int currentPlayer = 0, raisedPlayer = 0;
 	static int totalPlayers;
 	static int currentBet = 0;
+	static boolean isFreshGame = true;
 	static Scanner kbd = new Scanner(System.in);
 
 	public static void main(String[] args) {
-		if (args.length == 0) {
+		if (args.length == 0 || args[0].equals("Restart")) {
 			System.out.println("Welcome to Poker!");
 			cards = new DeckOfCards();
 			center = new CenterHand(cards.getNextCard(), cards.getNextCard());
@@ -26,7 +27,7 @@ public class Index {
 			totalPlayers = kbd.nextInt();
 			dealAllCards();
 		} else if (args[0].equals("New Game")) {
-			cards.shuffleDeck();
+			isFreshGame = true;
 			center.getCenter().clear();
 			hands.clear();
 			bets.clear();
@@ -36,8 +37,10 @@ public class Index {
 			raisedPlayer = 0;
 			totalPlayers = 0;
 			currentBet = 0;
-			main(null);
+			String[] restart = {"Restart"};
+			main(restart);
 		} else if (args[0].equals("Continue Game")) {
+			isFreshGame = false;
 			center.getCenter().clear();
 			hands.clear();
 			currentBet = 0;
@@ -50,9 +53,8 @@ public class Index {
 
 	public static void dealAllCards() {
 		System.out.println("Dealing cards: ");
-		// showLoadingAnimation();
+		showLoadingAnimation();
 		hands = new ArrayList<Hand>();
-		boolean isFreshGame = true;
 		if (isFreshGame) {
 			bets = new ArrayList<Bet>();
 		}
@@ -70,7 +72,7 @@ public class Index {
 	public static void startARound() {
 		if (!hasFolded(currentPlayer)) {
 			System.out.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
-					+ ". Place a bet. Fold with -1, raise with -2.");
+					+ ". Place a bet. Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
 			int playersBet = kbd.nextInt();
 			// If the player folds
 			if (playersBet == -1) {
@@ -161,7 +163,7 @@ public class Index {
 		ArrayList<Point> whoHadWhat = new ArrayList<Point>();
 		for (int i = 0; i < uniqueHandType.size(); i++) {
 			if (!hasFolded(i)) {
-				whoHadWhat.add(new Point((i + 1), uniqueHandType.get(i)));
+				whoHadWhat.add(new Point((i + 1), uniqueHandType.get(i) ,hands.get(i).getArrayListOfHand()));
 			}
 		}
 		System.out.println(whoHadWhat);
@@ -206,26 +208,33 @@ public class Index {
 			int temp = 0;
 			while (whoHadWhat.get(temp).getHand().equals(whoHadWhat.get(temp+1).getHand())) {
 				temp++;
+				if (temp == totalPlayers-1) break;
 			}
 			// Get each players hand for just the hand portion, then find highest card out of that.
-			ArrayList<Hand> uniques = new ArrayList<Hand>();
-			for (int i = 0; i <= temp; i++) {
-				uniques.add(hands.get(whoHadWhat.get(i).getPlayer()));
+			String uniqueHand = whoHadWhat.get(0).getHand();
+			for (int i = whoHadWhat.size() - 1; i >= 0; i--) {
+				if (!whoHadWhat.get(i).getHand().equals(uniqueHand)) {
+					whoHadWhat.remove(i);
+				}
 			}
-			// Until I can figure out a better method, winner is whoever has the highest card
-			int playerThatWins = 0;
-			ArrayList<Card> highCards = new ArrayList<Card>();
-			for (Hand h: uniques) {
-				highCards.add(UniqueHands.highCard(h.getArrayListOfHand()));
+			System.out.println(whoHadWhat);
+			
+			Point highest = whoHadWhat.get(0);
+			Card maxCard = UniqueHands.highCard(whoHadWhat.get(0).getAllCards());;
+			for (Point p: whoHadWhat) {
+				if (UniqueHands.highCard(p.getAllCards()).compareTo(maxCard) > 0) {
+					maxCard = UniqueHands.highCard(p.getAllCards());
+					highest = p;
+				}
 			}
-			Card highestCard = UniqueHands.highCard(highCards);
-			playerThatWins = highCards.indexOf(highestCard);
-			System.out.printf("Congrats, player %d, you won with a %s!\n", (playerThatWins+1), whoHadWhat.get(0).getHand());
-			winner(playerThatWins);
+
+			System.out.printf("Congrats, player %d, you won with a %s!\n", highest.getPlayer(), highest.getHand());
+			
+			winner(highest.getPlayer()-1);
 			askToKeepPlaying();
 		} else {
 			System.out.printf("Congrats, player %d, you won with a %s!\n", whoHadWhat.get(0).getPlayer(), whoHadWhat.get(0).getHand());
-			winner(whoHadWhat.get(0).getPlayer());
+			winner(whoHadWhat.get(0).getPlayer()-1);
 			askToKeepPlaying();
 		}
 	}
@@ -235,6 +244,12 @@ public class Index {
 	}
 	
 	public static void askToKeepPlaying() {
+		// Check for players who have no balance
+		for (int i = bets.size() - 1; i >= 0; i--) {
+			if (bets.get(i).getBalance() == 0) {
+				bets.remove(i);
+			}
+		}
 		System.out.println("1. Keep Playing\t2. New Game\t3. Quit");
 		int choice = kbd.nextInt();
 		if (choice == 1) {

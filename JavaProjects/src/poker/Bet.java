@@ -9,12 +9,20 @@ public class Bet implements Constants {
 	}
 	
 	public void bet(int amount) {
-		balance -= amount;
-		pot.add(amount);
+		if (balance < amount) {
+			System.out.println("Sorry, you can't bet as you do not have enough credits!");
+		} else {
+			balance -= amount;
+			pot.add(amount);
+		}
 	}
 	
 	public void win() {
 		balance += pot.winner();
+	}
+	
+	public int getBalance() {
+		return balance;
 	}
 	
 	public String toString() {

@@ -3,8 +3,10 @@ package poker;
 public class Card {
 	private int faceValue;
 	private String suit;
+	private int suitInt;
 	
 	public Card(int faceValue, int suit) {
+		this.suitInt = suit;
 		switch (suit) {
 			case 0: this.suit = "\u2660"; break;
 			case 1: this.suit = "\u2665"; break;
@@ -26,8 +28,20 @@ public class Card {
 		return suit;
 	}
 
+	public int getSuitInt() {
+		return suitInt;
+	}
+
 	public void setSuit(String suit) {
 		this.suit = suit;
+	}
+	
+	public int compareTo(Card c) {
+		if (c.getFaceValue() == this.getFaceValue()) {
+			return c.getSuitInt() - this.getSuitInt();
+		} else {
+			return this.getFaceValue() - c.getFaceValue();
+		}
 	}
 	
 	public boolean equals(Card c) {
