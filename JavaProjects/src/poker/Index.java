@@ -11,137 +11,132 @@ public class Index {
 	static CenterHand center;
 	static ArrayList<Hand> hands;
 	static ArrayList<Bet> bets;
-	static HashMap<Integer, Boolean> hasFolded = new HashMap<Integer, Boolean>();
-	static int currentPlayer = 0;
+	static ArrayList<Boolean> hasFolded = new ArrayList<Boolean>();
+	static int currentPlayer = 0, raisedPlayer = 0;
 	static int totalPlayers;
 	static int currentBet = 0;
 	static Scanner kbd = new Scanner(System.in);
 
 	public static void main(String[] args) {
-		System.out.println("Welcome to Blackjack!");
-		cards = new DeckOfCards();
-		center = new CenterHand(cards.getNextCard(), cards.getNextCard());
-		System.out.println("How many players?");
-		totalPlayers = kbd.nextInt();
-		dealAllCards();
+		if (args.length == 0) {
+			System.out.println("Welcome to Poker!");
+			cards = new DeckOfCards();
+			center = new CenterHand(cards.getNextCard(), cards.getNextCard());
+			System.out.println("How many players?");
+			totalPlayers = kbd.nextInt();
+			dealAllCards();
+		} else if (args[0].equals("New Game")) {
+			cards.shuffleDeck();
+			center.getCenter().clear();
+			hands.clear();
+			bets.clear();
+			hasFolded.clear();
+			hasFolded = new ArrayList<Boolean>();
+			currentPlayer = 0;
+			raisedPlayer = 0;
+			totalPlayers = 0;
+			currentBet = 0;
+			main(null);
+		} else if (args[0].equals("Continue Game")) {
+			center.getCenter().clear();
+			hands.clear();
+			currentBet = 0;
+			currentPlayer = 0;
+			raisedPlayer = 0;
+			hasFolded.clear();
+			dealAllCards();
+		}
 	}
 
 	public static void dealAllCards() {
 		System.out.println("Dealing cards: ");
 		// showLoadingAnimation();
 		hands = new ArrayList<Hand>();
-		bets = new ArrayList<Bet>();
+		boolean isFreshGame = true;
+		if (isFreshGame) {
+			bets = new ArrayList<Bet>();
+		}
 		for (int i = 0; i < totalPlayers; i++) {
 			hands.add(new Hand(cards.getNextCard(), cards.getNextCard()));
-			bets.add(new Bet());
-			hasFolded.put((i + 1), false);
+			if (isFreshGame) {
+				bets.add(new Bet());
+			}
+			hasFolded.add(false);
 		}
-		firstRoundBeforeCenterDeals();
+		isFreshGame = false;
+		startARound();
 	}
 
-	public static void firstRoundBeforeCenterDeals() {
-		if (!hasFolded(currentPlayer+1)) {
-			System.out.println("Hi player " + (currentPlayer + 1) + "! Here's your hand.");
-			System.out.println(hands.get(currentPlayer));
-			System.out.println("How much would you like to bet? If you want to fold, type -1.");
-			int thisPlayersBet = kbd.nextInt();
-			while (thisPlayersBet < 100) {
-				System.out.println("Sorry, your bet needs to be at least " + currentBet + ". Try again.");
-				thisPlayersBet = kbd.nextInt();
-			}
-			if (currentPlayer != 0 && thisPlayersBet > currentBet) {
-				currentBet = thisPlayersBet;
-				
-			}
-			if (thisPlayersBet == -1) {
-				fold(currentPlayer+1);
+	public static void startARound() {
+		if (!hasFolded(currentPlayer)) {
+			System.out.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
+					+ ". Place a bet. Fold with -1, raise with -2.");
+			int playersBet = kbd.nextInt();
+			// If the player folds
+			if (playersBet == -1) {
+				fold(currentPlayer);
 			} else {
-				bets.get(currentPlayer).bet(thisPlayersBet);
-				if (currentPlayer == 0) {
-					currentBet = thisPlayersBet;
-				} else {
-					keepBetOrRaise();
+				// Player raises
+				if (playersBet == -2) {
+					raise();
 				}
-				if (currentPlayer != (totalPlayers - 1)) {
-					currentPlayer++;
-					firstRoundBeforeCenterDeals();
+				// If no one has done anything, just set the bet size to the first bet
+				if (center.getCenter().size() == 2 && currentPlayer == 0) {
+					currentBet = playersBet;
 				}
+				// Otherwise, bet the amount and go on to the next player
+				bets.get(currentPlayer).bet(playersBet);
+				nextPlayer(false);
 			}
+		} else {
+			nextPlayer(false);
 		}
+	}
+
+	public static void raise() {
+		System.out.println("What will you be raising the total bet to?");
+		int newBet = kbd.nextInt();
+		bets.get(currentPlayer).bet(newBet - currentBet);
+		raisedPlayer = currentPlayer;
+		currentBet = newBet;
+		nextPlayer(true);
+	}
+
+	public static void nextPlayer(boolean raised) {
 		if (currentPlayer+1 == totalPlayers) {
 			currentPlayer = 0;
-			continueGame();
 		}
-	}
-	
-	public static void continueGame() {
-		if (currentPlayer == 0) {
-			center.dealNextCard(cards.getNextCard());
-		}
-		System.out.println("Here is the center: " + center);
-		System.out.println("Hello again, player " + (currentPlayer+1) + ". ");
-		if (currentPlayer == 0) {
-			System.out.println("Start the betting off with how much? Rememeber, you can type -1 instead to fold.");
-			int newBet = kbd.nextInt();
-			if (newBet == -1) {
-				fold(currentPlayer+1);
-				nextPlayer();
-				if (currentPlayer+1 == totalPlayers) {
-					if (center.getCenter().size() == 5) {
-						seeWhoWins();
-					}
-				} else {
-					continueGame();
-				}
-			} else {
-				bets.get(currentPlayer).bet(newBet);
-				nextPlayer();
-				if (currentPlayer+1 == totalPlayers) {
-					if (center.getCenter().size() == 5) {
-						seeWhoWins();
-					}
-				} else {
-					continueGame();
-				}
-			}
-		}
-	}
-	
-	public static void nextPlayer() {
-		if (currentPlayer - 1 == totalPlayers) {
-			currentPlayer = 0;
-		} else {
+
+		else {
 			currentPlayer++;
 		}
-	}
-	
-	public static void fold(int player) {
-		hasFolded.replace(player, true);
-	}
-	
-	public static boolean hasFolded(int player) {
-		return hasFolded.get(player);
+		// A full round has finished
+		if (currentPlayer == raisedPlayer && !raised) {
+			if (center.getCenter().size() == 5) {
+				seeWhoWins();
+				return;
+			} else {
+				center.dealNextCard(cards.getNextCard());
+				System.out.println("There is a new center hand: " + center);
+				startARound();
+			}
+		}
+		startARound();
 	}
 
-	public static void keepBetOrRaise() {
-		System.out.println("Keep the current bet of " + currentBet + " or raise it?");
-		String choice = kbd.next();
-		if (choice.equalsIgnoreCase("raise")) {
-			System.out.println("What would you like to raise the bet to?");
-			int raiseAmount = kbd.nextInt();
-			currentBet = raiseAmount;
-			System.out.println("Okay, sounds good. The current bet is now " + currentBet);
-			bets.get(currentPlayer).bet(currentBet);
-		} else {
-			bets.get(currentPlayer).bet(currentBet);
-		}
+	public static void fold(int player) {
+		hasFolded.set(player, true);
+	}
+
+	public static boolean hasFolded(int player) {
+		return hasFolded.get(player);
 	}
 
 	public static void seeWhoWins() {
 		int playerNumber = 0;
 		ArrayList<ArrayList<Card>> allCards = new ArrayList<ArrayList<Card>>();
 		for (int i = 0; i < totalPlayers; i++) {
-			if (!hasFolded(i+1)) {
+			if (!hasFolded(i)) {
 				allCards.add(new ArrayList<Card>());
 			}
 		}
@@ -165,7 +160,7 @@ public class Index {
 		// Add which player and what they had to a hashmap
 		ArrayList<Point> whoHadWhat = new ArrayList<Point>();
 		for (int i = 0; i < uniqueHandType.size(); i++) {
-			if (!hasFolded(i+1)) {
+			if (!hasFolded(i)) {
 				whoHadWhat.add(new Point((i + 1), uniqueHandType.get(i)));
 			}
 		}
@@ -196,7 +191,62 @@ public class Index {
 			whoHadWhat.set(minIndex, temp);
 		}
 		System.out.println(whoHadWhat);
-
+		// Find winner
+		
+		// If there's only one player
+		if (totalPlayers == 1) {
+			System.out.println("Well, there's only one player, so you win by default with a " + whoHadWhat.get(0).getHand() + "!");
+			winner(0);
+			askToKeepPlaying();
+		}
+		
+		// Only one person is a winner
+		if (whoHadWhat.get(0).getHand().equals(whoHadWhat.get(1).getHand())) {
+			// Multiple people are a winner! Solo out the players that tie for the lead.
+			int temp = 0;
+			while (whoHadWhat.get(temp).getHand().equals(whoHadWhat.get(temp+1).getHand())) {
+				temp++;
+			}
+			// Get each players hand for just the hand portion, then find highest card out of that.
+			ArrayList<Hand> uniques = new ArrayList<Hand>();
+			for (int i = 0; i <= temp; i++) {
+				uniques.add(hands.get(whoHadWhat.get(i).getPlayer()));
+			}
+			// Until I can figure out a better method, winner is whoever has the highest card
+			int playerThatWins = 0;
+			ArrayList<Card> highCards = new ArrayList<Card>();
+			for (Hand h: uniques) {
+				highCards.add(UniqueHands.highCard(h.getArrayListOfHand()));
+			}
+			Card highestCard = UniqueHands.highCard(highCards);
+			playerThatWins = highCards.indexOf(highestCard);
+			System.out.printf("Congrats, player %d, you won with a %s!\n", (playerThatWins+1), whoHadWhat.get(0).getHand());
+			winner(playerThatWins);
+			askToKeepPlaying();
+		} else {
+			System.out.printf("Congrats, player %d, you won with a %s!\n", whoHadWhat.get(0).getPlayer(), whoHadWhat.get(0).getHand());
+			winner(whoHadWhat.get(0).getPlayer());
+			askToKeepPlaying();
+		}
+	}
+	
+	public static void winner(int player) {
+		bets.get(player).win();
+	}
+	
+	public static void askToKeepPlaying() {
+		System.out.println("1. Keep Playing\t2. New Game\t3. Quit");
+		int choice = kbd.nextInt();
+		if (choice == 1) {
+			String[] args = {"Continue Game"};
+			main(args);
+		} else if (choice == 2) {
+			String[] args = {"New Game"};
+			main(args);
+		} else {
+			System.out.println("Thanks for playing!");
+			System.exit(0);
+		}
 	}
 
 	public static String showRandomReaction(boolean isPositive) {
