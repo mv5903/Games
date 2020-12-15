@@ -84,6 +84,7 @@ public class Index {
 			// If the player folds
 			if (playersBet == -1) {
 				fold(currentPlayer);
+				nextPlayer(false);
 			} else {
 				// Player raises
 				if (playersBet == -2) {
@@ -114,9 +115,7 @@ public class Index {
 	public static void nextPlayer(boolean raised) {
 		if (currentPlayer+1 == totalPlayers) {
 			currentPlayer = 0;
-		}
-
-		else {
+		} else {
 			currentPlayer++;
 		}
 		// A full round has finished
@@ -210,7 +209,7 @@ public class Index {
 		}
 		
 		// Only one person is a winner
-		if (whoHadWhat.get(0).getHand().equals(whoHadWhat.get(1).getHand())) {
+		if (whoHadWhat.size() > 1 && whoHadWhat.get(0).getHand().equals(whoHadWhat.get(1).getHand())) {
 			// Multiple people are a winner! Solo out the players that tie for the lead.
 			int temp = 0;
 			while (whoHadWhat.get(temp).getHand().equals(whoHadWhat.get(temp+1).getHand())) {
