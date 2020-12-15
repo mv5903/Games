@@ -1,12 +1,14 @@
 package poker;
 
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
 //♠ (To force UTF-8 saving)
 public class Index {
-
+	static PrintStream charStream;
 	static DeckOfCards cards;
 	static CenterHand center;
 	static ArrayList<Hand> hands;
@@ -20,6 +22,11 @@ public class Index {
 
 	public static void main(String[] args) {
 		if (args.length == 0 || args[0].equals("Restart")) {
+			try {
+				charStream =  new PrintStream(System.out, true, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
 			System.out.println("Welcome to Poker!");
 			cards = new DeckOfCards();
 			center = new CenterHand(cards.getNextCard(), cards.getNextCard());
@@ -71,7 +78,7 @@ public class Index {
 
 	public static void startARound() {
 		if (!hasFolded(currentPlayer)) {
-			System.out.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
+			charStream.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
 					+ ". Place a bet. Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
 			int playersBet = kbd.nextInt();
 			// If the player folds
@@ -119,7 +126,7 @@ public class Index {
 				return;
 			} else {
 				center.dealNextCard(cards.getNextCard());
-				System.out.println("There is a new center hand: " + center);
+				charStream.println("There is a new center hand: " + center);
 				startARound();
 			}
 		}
@@ -166,7 +173,7 @@ public class Index {
 				whoHadWhat.add(new Point((i + 1), uniqueHandType.get(i) ,hands.get(i).getArrayListOfHand()));
 			}
 		}
-		System.out.println(whoHadWhat);
+		charStream.println(whoHadWhat);
 
 		// Define hands order
 		HashMap<String, Integer> validHands = new HashMap<String, Integer>();
@@ -192,7 +199,7 @@ public class Index {
 			whoHadWhat.set(i, whoHadWhat.get(minIndex));
 			whoHadWhat.set(minIndex, temp);
 		}
-		System.out.println(whoHadWhat);
+		charStream.println(whoHadWhat);
 		// Find winner
 		
 		// If there's only one player
@@ -217,7 +224,7 @@ public class Index {
 					whoHadWhat.remove(i);
 				}
 			}
-			System.out.println(whoHadWhat);
+			charStream.println(whoHadWhat);
 			
 			Point highest = whoHadWhat.get(0);
 			Card maxCard = UniqueHands.highCard(whoHadWhat.get(0).getAllCards());;
