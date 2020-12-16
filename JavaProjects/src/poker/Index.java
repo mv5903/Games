@@ -83,6 +83,9 @@ public class Index {
 	}
 
 	public static void startARound() {
+		if (allFoldedButOne()) {
+			winner(hasFolded.indexOf(false), "by default");
+		}
 		if (!hasFolded(currentPlayer)) {
 			charStream.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
 					+ ". Place a bet of at least " + currentBet + ". Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
@@ -103,7 +106,7 @@ public class Index {
 				}
 				// If they enter another amount, as long as they have enough to bet
 				if (bets.get(currentPlayer).getBalance() > currentBet && playersBet != currentBet) {
-					System.out.println("Sorry, your bet needs to be at least " + currentBet + " to continue.");
+					System.out.println("Sorry, your bet needs to be " + currentBet + " to continue. Raise with -2.");
 					startARound();
 				}
 				// Otherwise, bet the amount and go on to the next player
@@ -147,6 +150,19 @@ public class Index {
 
 	public static void fold(int player) {
 		hasFolded.set(player, true);
+	}
+	
+	public static boolean allFoldedButOne() {
+		boolean foundOne = false;
+		for (int i = 0; i < hasFolded.size(); i++) {
+			if (foundOne && !hasFolded.get(i)) {
+				return false;
+			}
+			if (!hasFolded.get(i)) {
+				foundOne = true;
+			}
+		}
+		return true;
 	}
 
 	public static boolean hasFolded(int player) {
@@ -254,7 +270,13 @@ public class Index {
 	 * @param hand The hand they had, also tells the winning player what they had.
 	 */
 	public static void winner(int player, String hand) {
-		System.out.println("Congrats, player " + (player+1) + ", you won with a " + hand + "!");
+		String toSend = "";
+		if (hand.equals("by default")) {
+			toSend = hand;
+		} else {
+			toSend += "with a " + hand;
+		}
+		System.out.println("Congrats, player " + (player+1) + ", you win " +  toSend + "!");
 		bets.get(player).win();
 		askToKeepPlaying();
 	}
