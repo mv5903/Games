@@ -22,9 +22,6 @@ public class Hand {
     	cards[1] = b;
     }
 
-    public List<Card> getAllCardsInHand() {
-    	return Arrays.asList(cards);
-    }
     public ArrayList<Card> getArrayListOfHand() {
     	ArrayList<Card> temp = new ArrayList<Card>();
     	temp.add(cards[0]);

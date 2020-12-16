@@ -60,7 +60,7 @@ public class Index {
 
 	public static void dealAllCards() {
 		System.out.println("Dealing cards: ");
-		showLoadingAnimation();
+		//showLoadingAnimation();
 		hands = new ArrayList<Hand>();
 		if (isFreshGame) {
 			bets = new ArrayList<Bet>();
@@ -79,8 +79,9 @@ public class Index {
 	public static void startARound() {
 		if (!hasFolded(currentPlayer)) {
 			charStream.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
-					+ ". Place a bet. Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
+					+ ". Place a bet of at least " + currentBet + ". Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
 			int playersBet = kbd.nextInt();
+			
 			// If the player folds
 			if (playersBet == -1) {
 				fold(currentPlayer);
@@ -93,6 +94,11 @@ public class Index {
 				// If no one has done anything, just set the bet size to the first bet
 				if (center.getCenter().size() == 2 && currentPlayer == 0) {
 					currentBet = playersBet;
+				}
+				// If they enter another amount
+				if (playersBet != currentBet) {
+					System.out.println("Sorry, your bet needs to be at least " + currentBet + " to continue.");
+					startARound();
 				}
 				// Otherwise, bet the amount and go on to the next player
 				bets.get(currentPlayer).bet(playersBet);
@@ -141,112 +147,95 @@ public class Index {
 	}
 
 	public static void seeWhoWins() {
-		int playerNumber = 0;
-		ArrayList<ArrayList<Card>> allCards = new ArrayList<ArrayList<Card>>();
+		class WhoHasWhat {
+			ArrayList<Card> hand;
+			String whatTheyHave;
+			int playerNumber;
+			boolean folded;
+			ArrayList<Card> theirTwoCards;
+			Card highestCard;
+			WhoHasWhat(int playerNumber, ArrayList<Card> hand, boolean folded, ArrayList<Card> theirTwoCards) {
+				this.playerNumber = playerNumber;
+				this.hand = hand;
+				this.folded = folded;
+				whatTheyHave = UniqueHands.hasWhichHand(hand);
+				this.theirTwoCards = theirTwoCards;
+				highestCard = UniqueHands.highCard(theirTwoCards);
+			}
+			public String toString() {
+				String didTheyFold = folded ? "folded" : "not folded";
+				return String.format("Player %d has %s (%s) and has %s.\n", playerNumber, hand, whatTheyHave, didTheyFold);
+			}
+		}
+		ArrayList<ArrayList<Card>> handCombinedWithCenter = new ArrayList<ArrayList<Card>>();
 		for (int i = 0; i < totalPlayers; i++) {
-			if (!hasFolded(i)) {
-				allCards.add(new ArrayList<Card>());
-			}
+			handCombinedWithCenter.add(new ArrayList<Card>());
+			handCombinedWithCenter.get(i).addAll(center.getCenter());
+			handCombinedWithCenter.get(i).addAll(hands.get(i).getArrayListOfHand());
 		}
-		for (ArrayList<Card> c : allCards) {
-			// Add each hand to card list
-			for (Card handCard : hands.get(playerNumber).getAllCardsInHand()) {
-				// fix here
-				c.add(handCard);
-			}
-			// Add center hand to list
-			for (Card centerCard : center.getCenter()) {
-				c.add(centerCard);
-			}
-			playerNumber++;
+		
+		ArrayList<WhoHasWhat> who = new ArrayList<WhoHasWhat>();
+		for (int i = 0; i < totalPlayers; i++) {
+			who.add(new WhoHasWhat(i+1, handCombinedWithCenter.get(i), hasFolded.get(i), hands.get(i).getArrayListOfHand()));
 		}
-		ArrayList<String> uniqueHandType = new ArrayList<String>();
-		for (ArrayList<Card> c : allCards) {
-			String temp = UniqueHands.hasWhichHand(c);
-			uniqueHandType.add(temp);
-		}
-		// Add which player and what they had to a hashmap
-		ArrayList<Point> whoHadWhat = new ArrayList<Point>();
-		for (int i = 0; i < uniqueHandType.size(); i++) {
-			if (!hasFolded(i)) {
-				whoHadWhat.add(new Point((i + 1), uniqueHandType.get(i) ,hands.get(i).getArrayListOfHand()));
-			}
-		}
-		charStream.println(whoHadWhat);
-
-		// Define hands order
-		HashMap<String, Integer> validHands = new HashMap<String, Integer>();
+		
+		// Define the order of hands and sort hands accordingly
+		HashMap<String, Integer> handOrder = new HashMap<String, Integer>();
 		String[] handNames = { "Royal Flush", "Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight",
 				"Three of a Kind", "Two Pair", "Pair", "High Card" };
 		for (int i = 0; i < handNames.length; i++) {
-			validHands.put(handNames[i], (i + 1));
+			handOrder.put(handNames[i], i+1);
 		}
-
-		// Sort Player Hands by order via Selection Sort
-		Point min;
+		WhoHasWhat min;
 		int minIndex;
-		for (int i = 0; i < whoHadWhat.size() - 1; i++) {
-			min = whoHadWhat.get(i);
+		for (int i = 0; i < who.size() - 1; i++) {
 			minIndex = i;
-			for (int j = i; j < whoHadWhat.size(); j++) {
-				if (validHands.get(whoHadWhat.get(j).getHand()) < validHands.get(min.getHand())) {
-					min = whoHadWhat.get(j);
+			min = who.get(i);
+			for (int j = i; j < who.size(); j++) {
+				if (handOrder.get(who.get(j).whatTheyHave) < handOrder.get(min.whatTheyHave)) {
+					min = who.get(j);
 					minIndex = j;
 				}
 			}
-			Point temp = whoHadWhat.get(i);
-			whoHadWhat.set(i, whoHadWhat.get(minIndex));
-			whoHadWhat.set(minIndex, temp);
+			WhoHasWhat temp = who.get(i);
+			who.set(i, who.get(minIndex));
+			who.set(minIndex, temp);
 		}
-		charStream.println(whoHadWhat);
-		// Find winner
+		charStream.println(who);
 		
-		// If there's only one player
-		if (totalPlayers == 1) {
-			System.out.println("Well, there's only one player, so you win by default with a " + whoHadWhat.get(0).getHand() + "!");
-			winner(0);
-			askToKeepPlaying();
+		// Solo out just those who have the highest hand
+		// Remove all players that either folded or have a lower hand
+		String highestHand = who.get(0).whatTheyHave;
+		for (int i = who.size() - 1; i >= 0; i--) {
+			if (!who.get(i).whatTheyHave.equals(highestHand) || who.get(i).folded) {
+				who.remove(i);
+			}
+		}
+		System.out.println(who);
+		
+		// If there's only one player left in this list
+		if (who.size() == 1) {
+			winner(0, who.get(0).whatTheyHave);
 		}
 		
-		// Only one person is a winner
-		if (whoHadWhat.size() > 1 && whoHadWhat.get(0).getHand().equals(whoHadWhat.get(1).getHand())) {
-			// Multiple people are a winner! Solo out the players that tie for the lead.
-			int temp = 0;
-			while (whoHadWhat.get(temp).getHand().equals(whoHadWhat.get(temp+1).getHand())) {
-				temp++;
-				if (temp == totalPlayers-1) break;
+		// If just two players
+		
+		// If more players, for now winner will be highest card out of hand
+		WhoHasWhat w = who.get(0);
+		for (int i = 0; i < who.size(); i++) {
+			if (who.get(i).highestCard.compareTo(w.highestCard) > 0) {
+				w = who.get(i);
 			}
-			// Get each players hand for just the hand portion, then find highest card out of that.
-			String uniqueHand = whoHadWhat.get(0).getHand();
-			for (int i = whoHadWhat.size() - 1; i >= 0; i--) {
-				if (!whoHadWhat.get(i).getHand().equals(uniqueHand)) {
-					whoHadWhat.remove(i);
-				}
-			}
-			charStream.println(whoHadWhat);
-			
-			Point highest = whoHadWhat.get(0);
-			Card maxCard = UniqueHands.highCard(whoHadWhat.get(0).getAllCards());;
-			for (Point p: whoHadWhat) {
-				if (UniqueHands.highCard(p.getAllCards()).compareTo(maxCard) > 0) {
-					maxCard = UniqueHands.highCard(p.getAllCards());
-					highest = p;
-				}
-			}
+		}
+		winner(w.playerNumber-1, w.whatTheyHave);
 
-			System.out.printf("Congrats, player %d, you won with a %s!\n", highest.getPlayer(), highest.getHand());
-			
-			winner(highest.getPlayer()-1);
-			askToKeepPlaying();
-		} else {
-			System.out.printf("Congrats, player %d, you won with a %s!\n", whoHadWhat.get(0).getPlayer(), whoHadWhat.get(0).getHand());
-			winner(whoHadWhat.get(0).getPlayer()-1);
-			askToKeepPlaying();
-		}
+		
 	}
 	
-	public static void winner(int player) {
+	public static void winner(int player, String hand) {
+		System.out.println("Congrats, player " + (player+1) + ", you won with a " + hand + "!");
 		bets.get(player).win();
+		askToKeepPlaying();
 	}
 	
 	public static void askToKeepPlaying() {
