@@ -7,16 +7,20 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 //♠ (To force UTF-8 saving)
+/**
+ * Poker! Where everything comes together.
+ * @author matt
+ *
+ */
 public class Index {
+	// UTF-8 PrintStream is required for running game in command prompt.
 	static PrintStream charStream;
 	static DeckOfCards cards;
 	static CenterHand center;
 	static ArrayList<Hand> hands;
 	static ArrayList<Bet> bets;
 	static ArrayList<Boolean> hasFolded = new ArrayList<Boolean>();
-	static int currentPlayer = 0, raisedPlayer = 0;
-	static int totalPlayers;
-	static int currentBet = 0;
+	static int currentPlayer = 0, raisedPlayer = 0, totalPlayers, currentBet = 0;
 	static boolean isFreshGame = true;
 	static Scanner kbd = new Scanner(System.in);
 
@@ -57,10 +61,12 @@ public class Index {
 			dealAllCards();
 		}
 	}
-
+	/**
+	 * Deals all cards to each player and keeps track of who folds.
+	 */
 	public static void dealAllCards() {
 		System.out.println("Dealing cards: ");
-		//showLoadingAnimation();
+		showLoadingAnimation();
 		hands = new ArrayList<Hand>();
 		if (isFreshGame) {
 			bets = new ArrayList<Bet>();
@@ -95,8 +101,8 @@ public class Index {
 				if (center.getCenter().size() == 2 && currentPlayer == 0) {
 					currentBet = playersBet;
 				}
-				// If they enter another amount
-				if (playersBet != currentBet) {
+				// If they enter another amount, as long as they have enough to bet
+				if (bets.get(currentPlayer).getBalance() > currentBet && playersBet != currentBet) {
 					System.out.println("Sorry, your bet needs to be at least " + currentBet + " to continue.");
 					startARound();
 				}
@@ -125,6 +131,7 @@ public class Index {
 			currentPlayer++;
 		}
 		// A full round has finished
+		// Recall that if someone raises, everyone ahead of them also needs to raise.
 		if (currentPlayer == raisedPlayer && !raised) {
 			if (center.getCenter().size() == 5) {
 				seeWhoWins();
@@ -145,13 +152,29 @@ public class Index {
 	public static boolean hasFolded(int player) {
 		return hasFolded.get(player);
 	}
-
+	/**
+	 * Decides the winner. Winner is determined by the following:<br>
+	 * -If only one player has the best hand, then that player wins<br>
+	 * -If multiple players have the best hand, then winner is determined by who has the best card in their hand via {@link #compareTo()} in the Card class.
+	 * 
+	 */
 	public static void seeWhoWins() {
+		/**
+		 * Helps me keep track of:<br>
+		 * -What each player has<br>
+		 * -Their hand combined with the center, used for determining what hand they have<br>
+		 * -What player they are (Player 1, Player 2, etc.)<br>
+		 * -Whether or not they should be included when finding who wins, as long as they haven't folded<br>
+		 * -The highest card they have, used for determining winner in case of a a tie<br>
+		 * @author matt
+		 *
+		 */
 		class WhoHasWhat {
 			ArrayList<Card> hand;
 			String whatTheyHave;
 			int playerNumber;
 			boolean folded;
+			@SuppressWarnings("unused")
 			ArrayList<Card> theirTwoCards;
 			Card highestCard;
 			WhoHasWhat(int playerNumber, ArrayList<Card> hand, boolean folded, ArrayList<Card> theirTwoCards) {
@@ -201,8 +224,6 @@ public class Index {
 			who.set(i, who.get(minIndex));
 			who.set(minIndex, temp);
 		}
-		charStream.println(who);
-		
 		// Solo out just those who have the highest hand
 		// Remove all players that either folded or have a lower hand
 		String highestHand = who.get(0).whatTheyHave;
@@ -211,16 +232,12 @@ public class Index {
 				who.remove(i);
 			}
 		}
-		System.out.println(who);
-		
+
 		// If there's only one player left in this list
 		if (who.size() == 1) {
-			winner(0, who.get(0).whatTheyHave);
+			winner(who.get(0).playerNumber-1, who.get(0).whatTheyHave);
 		}
-		
-		// If just two players
-		
-		// If more players, for now winner will be highest card out of hand
+		// If more players
 		WhoHasWhat w = who.get(0);
 		for (int i = 0; i < who.size(); i++) {
 			if (who.get(i).highestCard.compareTo(w.highestCard) > 0) {
@@ -231,13 +248,19 @@ public class Index {
 
 		
 	}
-	
+	/**
+	 * Displays the winner
+	 * @param player The player that wins
+	 * @param hand The hand they had, also tells the winning player what they had.
+	 */
 	public static void winner(int player, String hand) {
 		System.out.println("Congrats, player " + (player+1) + ", you won with a " + hand + "!");
 		bets.get(player).win();
 		askToKeepPlaying();
 	}
-	
+	/**
+	 * Asks the user whether or not they want to start a new game or continue.
+	 */
 	public static void askToKeepPlaying() {
 		// Check for players who have no balance
 		for (int i = bets.size() - 1; i >= 0; i--) {
@@ -258,7 +281,11 @@ public class Index {
 			System.exit(0);
 		}
 	}
-
+	/**
+	 * Displays a random reaction
+	 * @param isPositive Gives a positive reaction, false for a negative reaction.
+	 * @return See the parameter.
+	 */
 	public static String showRandomReaction(boolean isPositive) {
 		if (isPositive) {
 			String[] positiveReactions = { "Sounds good!", "Wowzers!", "Alright!", "Looks good!", "Okay.",
@@ -271,9 +298,9 @@ public class Index {
 	}
 
 	public static void showLoadingAnimation() {
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < 10; i++) {
 			System.out.print('.');
-			sleep(1000);
+			sleep(200);
 		}
 		System.out.println();
 	}

@@ -1,5 +1,11 @@
 package poker;
 //♠
+/**
+ * Each card contains the face value, the suit it represents, and
+ * the suit reperesented as an interger used with {@link #compareTo(Card)}.
+ * @author matt
+ *
+ */
 public class Card {
 	private int faceValue;
 	private String suit;
@@ -35,7 +41,14 @@ public class Card {
 	public void setSuit(String suit) {
 		this.suit = suit;
 	}
-	
+	/**
+	 * Cards are compared based on their face value first. If they
+	 * are the same, then they are compared by their suit order.
+	 * @param c The Card to be compared to this.Card
+	 * @return The difference in the cards. Number will be positive
+	 * if this comes after c, similar to how the String compareTo works.
+	 * 
+	 */
 	public int compareTo(Card c) {
 		if (c.getFaceValue() == this.getFaceValue()) {
 			return c.getSuitInt() - this.getSuitInt();

@@ -1,5 +1,10 @@
 package poker;
 //♠
+/**
+ * Keeps track of the pot that players place their bets in.
+ * @author matt
+ *
+ */
 public class Pot {
 	private int amount;
 	

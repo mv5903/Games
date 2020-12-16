@@ -1,7 +1,12 @@
 package poker;
 //♠
 import java.util.ArrayList;
-
+/**
+ * This is the hand that is specifically the cards that wil be
+ * dealt to the center of the table.
+ * @author matt
+ *
+ */
 public class CenterHand {
 	private ArrayList<Card> hand = new ArrayList<Card>();
 	

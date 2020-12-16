@@ -1,5 +1,11 @@
 package poker;
 // ♠
+/**
+ * A bet is created for each player, and various events in the
+ * game will determine how their balance changes.
+ * @author matt
+ *
+ */
 public class Bet implements Constants {
 	private int balance;
 	private static Pot pot = new Pot();
@@ -7,7 +13,11 @@ public class Bet implements Constants {
 	public Bet() {
 		balance = INITIAL_AMOUNT;
 	}
-	
+	/**
+	 * When someone makes a bet, the amount they bet gets removed from
+	 * their total and added to the pot for the round.
+	 * @param amount The amount placed in the pot from the player.
+	 */
 	public void bet(int amount) {
 		if (balance < amount) {
 			System.out.println("Sorry, you can't bet as you do not have enough credits!");
@@ -16,7 +26,10 @@ public class Bet implements Constants {
 			pot.add(amount);
 		}
 	}
-	
+	/**
+	 * If the player wins, the amount in the pot gets reset to 0 and
+	 * all the money from the pot gets added to that player's balance.
+	 */
 	public void win() {
 		balance += pot.winner();
 	}

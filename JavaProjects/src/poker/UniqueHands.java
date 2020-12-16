@@ -2,7 +2,11 @@ package poker;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
+/**
+ * Responsible for determining the hand a player has, given an ArrayList of Cards.
+ * @author matt
+ *
+ */
 public class UniqueHands implements Constants {
 	// ♠
 	public static String[] orderOfHand = { "RoyalFlush", "StraightFlush", "FourOfAKind", "FullHouse", "Flush",
@@ -33,7 +37,11 @@ public class UniqueHands implements Constants {
 		}
 
 	}
-
+	/**
+	 * Sort the cards by number
+	 * @param cards Cards to sort
+	 * @return The cards sorted by number
+	 */
 	public static ArrayList<Card> sortCardsByNumber(ArrayList<Card> cards) {
 		Card minimum;
 		int minIndex;
@@ -52,7 +60,11 @@ public class UniqueHands implements Constants {
 		}
 		return cards;
 	}
-
+	/**
+	 * Sort the cards by suit
+	 * @param cards Cards to sort
+	 * @return The cards sorted by suit
+	 */
 	public static ArrayList<Card> sortCardsBySuit(ArrayList<Card> cards) {
 		// Sorted by suit, lowest to highest
 		ArrayList<Card> clubs = new ArrayList<Card>();
@@ -88,7 +100,11 @@ public class UniqueHands implements Constants {
 		}
 		return false;
 	}
-
+	/**
+	 * See if the straight and the flush line up to the exact same cards.
+	 * @param cards Cards to find a straight flush
+	 * @return If the cards are a straight flush
+	 */
 	public static boolean hasStraightFlush(ArrayList<Card> cards) {
 		if (!hasStraight(cards) || !hasFlush(cards))
 			return false;
@@ -113,7 +129,11 @@ public class UniqueHands implements Constants {
 
 		return hasFlush(straightCards);
 	}
-
+	/**
+	 * Sees if there is a four of a kind
+	 * @param cards Sees if there is a four of a kind by first sorting the cards by number
+	 * @return true is the cards are a four of a kind.
+	 */
 	public static boolean hasFourOfAKind(ArrayList<Card> cards) {
 		cards = sortCardsByNumber(cards);
 		Collections.reverse(cards);
@@ -124,10 +144,14 @@ public class UniqueHands implements Constants {
 				return true;
 			}
 		}
-
 		return false;
 	}
-
+	/**
+	 * Finds the three of a kind, then removes that from the ArrayList of cards. Then sees if there is a two pair
+	 * out of the remaining cards.
+	 * @param cards The cards to find a full house at of
+	 * @return true if the cards contain a full house
+	 */
 	public static boolean hasFullHouse(ArrayList<Card> cards) {
 		// Find three of a kind
 		ArrayList<Card> temp = new ArrayList<Card>();
@@ -150,7 +174,11 @@ public class UniqueHands implements Constants {
 		}
 		return hasPair(temp);
 	}
-
+	/**
+	 * Sort the cards by suit, then see if there are five cards together of the same suit.
+	 * @param cards Cards to find a flush for
+	 * @return true if the cards has a flush
+	 */
 	public static boolean hasFlush(ArrayList<Card> cards) {
 		cards = sortCardsBySuit(cards);
 		for (int i = 0; i < cards.size() - 4; i++) {
@@ -163,7 +191,12 @@ public class UniqueHands implements Constants {
 		}
 		return false;
 	}
-
+	/**
+	 * Sort the card by faceValue, then see if there are five cards that have a difference of one
+	 * between each of them.
+	 * @param cards Cards to find a straight with.
+	 * @return true if the cards contain a straight.
+	 */
 	public static boolean hasStraight(ArrayList<Card> cards) {
 		cards = sortCardsByNumber(cards);
 		boolean straight = false;
