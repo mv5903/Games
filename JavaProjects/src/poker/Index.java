@@ -9,6 +9,7 @@ import java.util.Scanner;
 //♠ (To force UTF-8 saving)
 /**
  * Poker! Where everything comes together.
+ * 
  * @author matt
  *
  */
@@ -27,16 +28,22 @@ public class Index {
 	public static void main(String[] args) {
 		if (args.length == 0 || args[0].equals("Restart")) {
 			try {
-				charStream =  new PrintStream(System.out, true, "UTF-8");
+				charStream = new PrintStream(System.out, true, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				e.printStackTrace();
 			}
 			System.out.println("Welcome to Poker!");
-			cards = new DeckOfCards();
-			center = new CenterHand(cards.getNextCard(), cards.getNextCard());
-			System.out.println("How many players?");
-			totalPlayers = kbd.nextInt();
-			dealAllCards();
+			System.out.println("Would you like to play local or online?");
+			String connectionType = kbd.next();
+			if (connectionType.equalsIgnoreCase("local")) {
+				cards = new DeckOfCards();
+				center = new CenterHand(cards.getNextCard(), cards.getNextCard());
+				System.out.println("How many players?");
+				totalPlayers = kbd.nextInt();
+				dealAllCards();
+			} else {
+				NetIndex.main(null);
+			}
 		} else if (args[0].equals("New Game")) {
 			isFreshGame = true;
 			center.getCenter().clear();
@@ -48,7 +55,7 @@ public class Index {
 			raisedPlayer = 0;
 			totalPlayers = 0;
 			currentBet = 0;
-			String[] restart = {"Restart"};
+			String[] restart = { "Restart" };
 			main(restart);
 		} else if (args[0].equals("Continue Game")) {
 			isFreshGame = false;
@@ -61,6 +68,7 @@ public class Index {
 			dealAllCards();
 		}
 	}
+
 	/**
 	 * Deals all cards to each player and keeps track of who folds.
 	 */
@@ -88,9 +96,10 @@ public class Index {
 		}
 		if (!hasFolded(currentPlayer)) {
 			charStream.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
-					+ ". Place a bet of at least " + currentBet + ". Fold with -1, raise with -2.\n(" + bets.get(currentPlayer) + ").");
+					+ ". Place a bet of at least " + currentBet + ". Fold with -1, raise with -2.\n("
+					+ bets.get(currentPlayer) + ").");
 			int playersBet = kbd.nextInt();
-			
+
 			// If the player folds
 			if (playersBet == -1) {
 				fold(currentPlayer);
@@ -128,7 +137,7 @@ public class Index {
 	}
 
 	public static void nextPlayer(boolean raised) {
-		if (currentPlayer+1 == totalPlayers) {
+		if (currentPlayer + 1 == totalPlayers) {
 			currentPlayer = 0;
 		} else {
 			currentPlayer++;
@@ -151,7 +160,7 @@ public class Index {
 	public static void fold(int player) {
 		hasFolded.set(player, true);
 	}
-	
+
 	public static boolean allFoldedButOne() {
 		boolean foundOne = false;
 		for (int i = 0; i < hasFolded.size(); i++) {
@@ -168,20 +177,26 @@ public class Index {
 	public static boolean hasFolded(int player) {
 		return hasFolded.get(player);
 	}
+
 	/**
 	 * Decides the winner. Winner is determined by the following:<br>
 	 * -If only one player has the best hand, then that player wins<br>
-	 * -If multiple players have the best hand, then winner is determined by who has the best card in their hand via {@link #compareTo()} in the Card class.
+	 * -If multiple players have the best hand, then winner is determined by who has
+	 * the best card in their hand via {@link #compareTo()} in the Card class.
 	 * 
 	 */
 	public static void seeWhoWins() {
 		/**
 		 * Helps me keep track of:<br>
 		 * -What each player has<br>
-		 * -Their hand combined with the center, used for determining what hand they have<br>
+		 * -Their hand combined with the center, used for determining what hand they
+		 * have<br>
 		 * -What player they are (Player 1, Player 2, etc.)<br>
-		 * -Whether or not they should be included when finding who wins, as long as they haven't folded<br>
-		 * -The highest card they have, used for determining winner in case of a a tie<br>
+		 * -Whether or not they should be included when finding who wins, as long as
+		 * they haven't folded<br>
+		 * -The highest card they have, used for determining winner in case of a a
+		 * tie<br>
+		 * 
 		 * @author matt
 		 *
 		 */
@@ -193,6 +208,7 @@ public class Index {
 			@SuppressWarnings("unused")
 			ArrayList<Card> theirTwoCards;
 			Card highestCard;
+
 			WhoHasWhat(int playerNumber, ArrayList<Card> hand, boolean folded, ArrayList<Card> theirTwoCards) {
 				this.playerNumber = playerNumber;
 				this.hand = hand;
@@ -201,9 +217,11 @@ public class Index {
 				this.theirTwoCards = theirTwoCards;
 				highestCard = UniqueHands.highCard(theirTwoCards);
 			}
+
 			public String toString() {
 				String didTheyFold = folded ? "folded" : "not folded";
-				return String.format("Player %d has %s (%s) and has %s.\n", playerNumber, hand, whatTheyHave, didTheyFold);
+				return String.format("Player %d has %s (%s) and has %s.\n", playerNumber, hand, whatTheyHave,
+						didTheyFold);
 			}
 		}
 		ArrayList<ArrayList<Card>> handCombinedWithCenter = new ArrayList<ArrayList<Card>>();
@@ -212,18 +230,19 @@ public class Index {
 			handCombinedWithCenter.get(i).addAll(center.getCenter());
 			handCombinedWithCenter.get(i).addAll(hands.get(i).getArrayListOfHand());
 		}
-		
+
 		ArrayList<WhoHasWhat> who = new ArrayList<WhoHasWhat>();
 		for (int i = 0; i < totalPlayers; i++) {
-			who.add(new WhoHasWhat(i+1, handCombinedWithCenter.get(i), hasFolded.get(i), hands.get(i).getArrayListOfHand()));
+			who.add(new WhoHasWhat(i + 1, handCombinedWithCenter.get(i), hasFolded.get(i),
+					hands.get(i).getArrayListOfHand()));
 		}
-		
+
 		// Define the order of hands and sort hands accordingly
 		HashMap<String, Integer> handOrder = new HashMap<String, Integer>();
 		String[] handNames = { "Royal Flush", "Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight",
 				"Three of a Kind", "Two Pair", "Pair", "High Card" };
 		for (int i = 0; i < handNames.length; i++) {
-			handOrder.put(handNames[i], i+1);
+			handOrder.put(handNames[i], i + 1);
 		}
 		WhoHasWhat min;
 		int minIndex;
@@ -251,7 +270,7 @@ public class Index {
 
 		// If there's only one player left in this list
 		if (who.size() == 1) {
-			winner(who.get(0).playerNumber-1, who.get(0).whatTheyHave);
+			winner(who.get(0).playerNumber - 1, who.get(0).whatTheyHave);
 		}
 		// If more players
 		WhoHasWhat w = who.get(0);
@@ -260,14 +279,15 @@ public class Index {
 				w = who.get(i);
 			}
 		}
-		winner(w.playerNumber-1, w.whatTheyHave);
+		winner(w.playerNumber - 1, w.whatTheyHave);
 
-		
 	}
+
 	/**
 	 * Displays the winner
+	 * 
 	 * @param player The player that wins
-	 * @param hand The hand they had, also tells the winning player what they had.
+	 * @param hand   The hand they had, also tells the winning player what they had.
 	 */
 	public static void winner(int player, String hand) {
 		String toSend = "";
@@ -276,10 +296,11 @@ public class Index {
 		} else {
 			toSend += "with a " + hand;
 		}
-		System.out.println("Congrats, player " + (player+1) + ", you win " +  toSend + "!");
+		System.out.println("Congrats, player " + (player + 1) + ", you win " + toSend + "!");
 		bets.get(player).win();
 		askToKeepPlaying();
 	}
+
 	/**
 	 * Asks the user whether or not they want to start a new game or continue.
 	 */
@@ -293,18 +314,20 @@ public class Index {
 		System.out.println("1. Keep Playing\t2. New Game\t3. Quit");
 		int choice = kbd.nextInt();
 		if (choice == 1) {
-			String[] args = {"Continue Game"};
+			String[] args = { "Continue Game" };
 			main(args);
 		} else if (choice == 2) {
-			String[] args = {"New Game"};
+			String[] args = { "New Game" };
 			main(args);
 		} else {
 			System.out.println("Thanks for playing!");
 			System.exit(0);
 		}
 	}
+
 	/**
 	 * Displays a random reaction
+	 * 
 	 * @param isPositive Gives a positive reaction, false for a negative reaction.
 	 * @return See the parameter.
 	 */
