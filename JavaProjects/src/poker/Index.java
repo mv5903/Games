@@ -92,7 +92,7 @@ public class Index {
 
 	public static void startARound() {
 		if (allFoldedButOne()) {
-			winner(hasFolded.indexOf(false), "by default");
+			winner(hasFolded.indexOf(false), " by default");
 		}
 		if (!hasFolded(currentPlayer)) {
 			charStream.println("Player " + (currentPlayer + 1) + ", here are your cards: " + hands.get(currentPlayer)
@@ -150,6 +150,7 @@ public class Index {
 				return;
 			} else {
 				center.dealNextCard(cards.getNextCard());
+				currentBet = 0;
 				charStream.println("There is a new center hand: " + center);
 				startARound();
 			}

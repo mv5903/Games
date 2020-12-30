@@ -78,9 +78,13 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			pw.println(tfInput.getText());
 		}
 	}
-	
+
 	public void send(String text) {
 		pw.println(text);
+	}
+
+	public void sendPrivately(String user, String message) {
+		pw.println("PRIVATE TO " + user + ": " + message);
 	}
 
 	public static void main(String[] args) {
@@ -103,16 +107,16 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 				JOptionPane.showMessageDialog(null, "Wrong password.");
 				System.exit(0);
 			}
+		} else {
+			try {
+				new ChatClient(name, servername, false);
+			} catch (Exception ex) {
+				JOptionPane.showMessageDialog(null,
+						"An exception has been raised:\n" + ex.getMessage() + "\nProgram will now terminate.");
+			}
 		}
 
 		// NetIndex.DELETE(name);
-
-		try {
-			new ChatClient(name, servername, false);
-		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(null,
-					"An exception has been raised:\n" + ex.getMessage() + "\nProgram will now terminate.");
-		}
 
 	} // end of main
 
@@ -123,8 +127,8 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			try {
 				while (true) {
 					if (isAdmin) {
-						
-						send(String.valueOf(SPADES));
+						Thread.sleep(30000);
+						sendPrivately("matt", "let me be clear");
 					} else {
 						line = br.readLine();
 						if (line.contains(uname + "-privately: duplicate user name exists")) {

@@ -39,6 +39,14 @@ public class ChatServer implements Constants {
 		for (HandleClient c : clients)
 			c.sendMessage(user, message);
 	}
+	
+	public void sendPrivately(String user, String message) {
+		for (HandleClient client: clients) {
+			if (client.getUserName().equals(user)) {
+				client.sendMessage("SYSTEM", message);
+			}
+ 		}
+	}
 
 	class HandleClient extends Thread {
 		String name = "";
@@ -75,6 +83,15 @@ public class ChatServer implements Constants {
 			try {
 				while (true) {
 					line = input.readLine();
+					System.out.println(line);
+					if (line.contains("PRIVATE TO")) {
+						String userToSendTo = line.substring(11, line.indexOf(":"));
+						System.out.println(userToSendTo);
+						String messageToSend = line.substring(line.indexOf(":") + 1);
+						out.println(messageToSend);
+						sendPrivately(userToSendTo, messageToSend);
+						continue;
+					}
 					if (line.equals("end")) {
 						clients.remove(this);
 						users.remove(name);
