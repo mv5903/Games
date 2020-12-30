@@ -73,13 +73,13 @@ public class UniqueHands implements Constants {
 		ArrayList<Card> spades = new ArrayList<Card>();
 
 		for (Card c : cards) {
-			if (c.getSuit().equalsIgnoreCase(CLUBS)) {
+			if (c.getSuit().equalsIgnoreCase(String.valueOf(CLUBS))) {
 				clubs.add(c);
-			} else if (c.getSuit().equalsIgnoreCase(DIAMONDS)) {
+			} else if (c.getSuit().equalsIgnoreCase(String.valueOf(DIAMONDS))) {
 				diamonds.add(c);
-			} else if (c.getSuit().equalsIgnoreCase(HEARTS)) {
+			} else if (c.getSuit().equalsIgnoreCase(String.valueOf(HEARTS))) {
 				hearts.add(c);
-			} else if (c.getSuit().equalsIgnoreCase(SPADES)) {
+			} else if (c.getSuit().equalsIgnoreCase(String.valueOf(SPADES))) {
 				spades.add(c);
 			}
 		}

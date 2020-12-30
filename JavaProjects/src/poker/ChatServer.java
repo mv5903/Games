@@ -3,16 +3,15 @@ package poker;
 import java.io.*;
 import java.util.*;
 import java.net.*;
+import java.nio.charset.Charset;
+
 import static java.lang.System.out;
 
 public class ChatServer implements Constants {
 	Vector<String> users = new Vector<String>();
 	Vector<HandleClient> clients = new Vector<HandleClient>();
-	File userList = new File("users.txt");
-	FileWriter fw;
 
 	public void process() throws Exception {
-		fw = new FileWriter(userList);
 		ServerSocket server = new ServerSocket(9999, 10);
 		out.println("Server Started...");
 		while (true) {
@@ -22,7 +21,7 @@ public class ChatServer implements Constants {
 				c = new HandleClient(client);
 				out.println(users);
 				clients.add(c);
-				sendToAll(c.getUserName(), " has joined!");
+				broadcast(c.getUserName(), " has joined! " + String.valueOf(SPADES));
 			} catch (Exception e) {
 				if (e.getMessage().equals("Duplicate User")) {
 					continue;
@@ -34,18 +33,11 @@ public class ChatServer implements Constants {
 	public static void main(String... args) throws Exception {
 		new ChatServer().process();
 	} // end of main
-
-	public void sendToAll(String user, String message) {
-		for (HandleClient c: clients) {
-			c.sendMessage(user, message);
-		}
-	}
 	
 	public void broadcast(String user, String message) {
 		// send message to all connected users
 		for (HandleClient c : clients)
-			if (!c.getUserName().equals(user))
-				c.sendMessage(user, message);
+			c.sendMessage(user, message);
 	}
 
 	class HandleClient extends Thread {
@@ -55,11 +47,11 @@ public class ChatServer implements Constants {
 
 		public HandleClient(Socket client) throws Exception {
 			// get input and output streams
-			input = new BufferedReader(new InputStreamReader(client.getInputStream()));
-			output = new PrintWriter(client.getOutputStream(), true);
+			input = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
+			output = new PrintWriter(client.getOutputStream(), true, Charset.forName("UTF-8"));
 			// read name
 			name = input.readLine();
-			if (users.contains(name)) {
+			if (users.size() > 1 && users.contains(name)) {
 				sendMessage(name + "-privately", " duplicate user name exists");
 				throw new Exception("Duplicate User");
 			} else {
