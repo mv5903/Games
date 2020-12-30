@@ -14,9 +14,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+//import org.json.*;
+
 public class NetIndex {
 	static String IPAddress;
-	final static int port = 8080;
 	static Scanner kbd = new Scanner(System.in);
 	static PrintStream charStream;
 
@@ -24,7 +25,11 @@ public class NetIndex {
 		System.out.println("Welcome to Poker - Internet Version. Are you hosting?");
 		if (kbd.next().equalsIgnoreCase("yes")) {
 			System.out.println("Ok. Please follow the instructions on GitHub to learn how to create a server.");
-			server();
+			try {
+				ChatServer.main((String[])null);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		} else {
 			System.out.println("Please enter the IP Address of whom you would like to connect to.");
 			IPAddress = kbd.next();
@@ -32,10 +37,6 @@ public class NetIndex {
 		}
 	}
 	
-	public static void server() {
-		String[] args = {"69"};
-		Server.main(args);
-	}
 	
 	public static void menu() {
 		
@@ -44,7 +45,7 @@ public class NetIndex {
 	public static void getPersonalInformation() {
 		System.out.println("Please enter your name: ");
 		String name = kbd.next();
-		DELETE(name);
+		GET(name, "highestCard");
 		
 	}
 	
@@ -179,7 +180,6 @@ public class NetIndex {
 					return data.substring(startValue, endValue);
 				}
 			}
-
 		} catch (MalformedURLException e) {
 			System.out.println("IP Address Invalid.");
 		} catch (ProtocolException e) {
