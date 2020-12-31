@@ -58,8 +58,8 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent windowEvent) {
-				pw.println(" has left the game!");
-				pw.println("end"); // send end to server so that server know about the termination
+				pw.println("has left the game!");
+				pw.println("end");
 				System.exit(0);
 			}
 		});
@@ -126,21 +126,85 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			String line;
 			try {
 				while (true) {
-					if (isAdmin) {
-						Thread.sleep(30000);
-						sendPrivately("matt", "let me be clear");
-					} else {
-						line = br.readLine();
-						if (line.contains(uname + "-privately: duplicate user name exists")) {
-							System.out.println(line);
-							JOptionPane.showMessageDialog(null,
-									"Sorry, someone on the server already has this name. Please join again with another name!");
-							System.exit(0);
+					line = br.readLine();
+					if (line.equals("Privately to you: allow send button")) { //enable send button
+						for (ActionListener a: btnSend.getActionListeners()) {
+							btnSend.removeActionListener(a);
 						}
-						taMessages.append(line + "\n");
+						for (KeyListener a: tfInput.getKeyListeners()) {
+							tfInput.removeKeyListener(a);
+						}
+						btnSend.addActionListener(new ActionListener() {
+
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								if (e.getSource() == btnExit) {
+									pw.println("end"); // send end to server so that server know about the termination
+									System.exit(0);
+								} else {
+									// send message to server
+									pw.println(tfInput.getText());
+								}
+							}
+							
+						});
+						tfInput.addKeyListener(new KeyListener() {
+
+							@Override
+							public void keyTyped(KeyEvent e) {
+								// TODO Auto-generated method stub
+								
+							}
+
+							@Override
+							public void keyPressed(KeyEvent e) {
+								int key = e.getKeyCode();
+								if (key == KeyEvent.VK_ENTER) {
+									pw.println(tfInput.getText());
+									tfInput.setText("");
+								}
+							}
+
+							@Override
+							public void keyReleased(KeyEvent e) {
+								// TODO Auto-generated method stub
+								
+							}
+							
+						});
+						continue;
 					}
+					if (line.equals("Privately to you: disable send button")) {
+						for (ActionListener a: btnSend.getActionListeners()) {
+							btnSend.removeActionListener(a);
+						}
+						for (KeyListener a: tfInput.getKeyListeners()) {
+							tfInput.removeKeyListener(a);
+						}
+						continue;
+					}
+					if (line.contains(uname + "-privately: duplicate user name exists")) {
+						System.out.println(line);
+						JOptionPane.showMessageDialog(null,
+								"Sorry, someone on the server already has this name. Please join again with another name!");
+						System.exit(0);
+					}
+					taMessages.append(line + "\n");
 				} // end of while
 			} catch (Exception ex) {
+			}
+		}
+
+		public String waitForResponse(String username) {
+			try {
+				while (true) {
+					String line = br.readLine();
+					if (line.substring(0, line.indexOf(":")).equals(username)) {
+						return line.substring(line.indexOf(":") + 1);
+					}
+				}
+			} catch (Exception ex) {
+				return "Couldn't get a reponse";
 			}
 		}
 	}
