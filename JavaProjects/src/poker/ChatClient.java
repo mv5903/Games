@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 import java.net.*;
 import javax.swing.*;
+import javax.swing.text.html.HTML;
+
 import java.awt.*;
 import java.awt.event.*;
 import static java.lang.System.out;
@@ -41,6 +43,9 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		taMessages.setEditable(false);
 		taMessages.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
 		tfInput = new JTextField(50);
+		tfInput.setEditable(false);
+		tfInput.setBackground(Color.LIGHT_GRAY); //grey out area
+		tfInput.setText("User input disabled.");
 		JScrollPane sp = new JScrollPane(taMessages, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
 				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		add(sp, "Center");
@@ -50,11 +55,16 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		bp.add(btnSend);
 		bp.add(btnExit);
 		add(bp, "South");
-		btnSend.addActionListener(this);
+		if (uname.equals("admin")) {
+			btnSend.addActionListener(this);
+			tfInput.addKeyListener(this);
+			tfInput.setBackground(Color.WHITE);
+			tfInput.setText("");
+			tfInput.setEditable(true);
+		}
 		btnExit.addActionListener(this);
 		setSize(500, 300);
 		setVisible(true);
-		tfInput.addKeyListener(this);
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent windowEvent) {
@@ -63,7 +73,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 				System.exit(0);
 			}
 		});
-		setTitle("Poker Game");
+		setTitle("Poker Game: " + uname);
 		setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
 		pack();
 		tfInput.requestFocusInWindow();
@@ -172,6 +182,9 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 							}
 							
 						});
+						tfInput.setBackground(Color.WHITE);
+						tfInput.setText("");
+						tfInput.setEditable(true);
 						continue;
 					}
 					if (line.equals("Privately to you: disable send button")) {
@@ -181,6 +194,9 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 						for (KeyListener a: tfInput.getKeyListeners()) {
 							tfInput.removeKeyListener(a);
 						}
+						tfInput.setBackground(Color.LIGHT_GRAY); //grey out area
+						tfInput.setText("User input disabled.");
+						tfInput.setEditable(false);
 						continue;
 					}
 					if (line.contains(uname + "-privately: duplicate user name exists")) {
