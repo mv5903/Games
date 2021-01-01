@@ -88,6 +88,7 @@ public class ChatServer implements Constants {
 					response = line.substring(line.indexOf(":") + 1);
 					if ((name + ": " + line).equals("admin: start")) { //start the game
 						Game g = new Game();
+						g.setName("Game Thread");
 						g.start();
 						break;
 					}
@@ -102,7 +103,6 @@ public class ChatServer implements Constants {
 						sendPrivately(userToSendTo, messageToSend);
 						continue;
 					}
-					broadcast(name, line);
 				}
 			}
 			catch (Exception ex) {
@@ -115,6 +115,7 @@ public class ChatServer implements Constants {
 			Hand hand;
 			boolean hasFolded;
 			String name;
+			String handType;
 			ArrayList<Card> handCombinedWithCenter;
 			
 			Player(Hand hand, boolean hasFolded, String name) {
@@ -134,11 +135,9 @@ public class ChatServer implements Constants {
 			ArrayList<Player> players;
 			DeckOfCards cards;
 			CenterHand center;
-			boolean isFreshGame;
-			int currentPlayer = 0, raisedPlayer = 0, totalPlayers = 0, currentBet = 0, round = 0;
+			int currentPlayer = 0, raisedPlayer = 0, totalPlayers = 0, currentBet = 0, round = -1;
 			
 			public void run() {
-				isFreshGame = false;
 				players = new ArrayList<Player>();
 				cards = new DeckOfCards();
 				center = new CenterHand(cards.getNextCard(), cards.getNextCard());
@@ -155,29 +154,31 @@ public class ChatServer implements Constants {
 			}
 			
 			public void startNewRound() {
+				round++;
 				if (round != 0) {
+					center.dealNextCard(cards.getNextCard());
 					sendToAll("A card has been added to the center. The center is now: " + center);
 				}
+				if (round == 4) {
+					decideWinner();
+				}
+				raisedPlayer = 0;
 				for (Player p: players) {
 					sendPrivately(p.name, "Your hand is " + p.hand + ".");
 					setEditable(p.name, false);
 				}
 				takeTurn();
-				currentPlayer++;
-				while (currentPlayer != raisedPlayer) {
-					if (currentPlayer == totalPlayers) {
-						currentPlayer = 0;
-					}
-					takeTurn();
-					currentPlayer++;
+				while (true) {
+					decideNextPlayer();
 				}
 			}
 			
 			public void takeTurn() {
 				if (!players.get(currentPlayer).hasFolded) {
-					String selection = waitForPlayerInput(players.get(currentPlayer).name, "Place a bet of " + currentBet + ", type \"raise\" to raise, or type \"fold\" to fold.");
+					String selection = waitForPlayerInput(players.get(currentPlayer).name, players.get(currentPlayer).name + " Place a bet of " + currentBet + ", type \"raise\" to raise, or type \"fold\" to fold. Your current balance: " + players.get(currentPlayer).bet.getBalance());
 					if (selection.equalsIgnoreCase("fold")) {
 						players.get(currentPlayer).hasFolded = true;
+						return;
 					} else if (selection.equalsIgnoreCase("raise")) {
 						while (true) {
 							raisedPlayer = currentPlayer;
@@ -193,8 +194,9 @@ public class ChatServer implements Constants {
 								sendPrivately(players.get(currentPlayer).name, "Uh, why did you raise in the first place?");
 								takeTurn();
 							}
-							sendToAll(players.get(currentPlayer).name + "raised the bet by " + amountRaised + "! All remaining players must call " + currentBet + " to continue playing this round.");
+							sendToAll(players.get(currentPlayer).name + " raised the bet by " + amountRaised + "! All remaining players must call " + currentBet + " to continue playing this round.");
 							currentBet+=amountRaised;
+							return;
 						}
 					} else {
 						int amount;
@@ -210,8 +212,25 @@ public class ChatServer implements Constants {
 							takeTurn();
 						}
 						players.get(currentPlayer).bet.bet(amount);
+						return;
 					}
 				}
+			}
+			
+			public void decideNextPlayer() {
+				currentPlayer++;
+				if (currentPlayer == raisedPlayer) {
+					startNewRound();
+				} else if (currentPlayer == totalPlayers) {
+					currentPlayer = 0;
+					if (currentPlayer == raisedPlayer) {
+						startNewRound();
+					}
+					takeTurn();
+				} else {
+					takeTurn();
+				}
+				
 			}
 			
 			public boolean allFoldedButOne() {
@@ -227,6 +246,120 @@ public class ChatServer implements Constants {
 				return true;
 			}
 			
+			public void decideWinner() {
+				//Combine hand with center
+				for (Player p: players) {
+					p.handCombinedWithCenter = new ArrayList<Card>();
+					p.handCombinedWithCenter.addAll(p.hand.getArrayListOfHand());
+					p.handCombinedWithCenter.addAll(center.getCenter());
+				}
+				//Find what hand name each player has
+				for (Player p: players) {
+					p.handType = UniqueHands.hasWhichHand(p.handCombinedWithCenter);
+				}
+				//Create the order of hands
+				HashMap<String, Integer> handOrder = new HashMap<String, Integer>();
+				String[] handNames = { "Royal Flush", "Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight",
+						"Three of a Kind", "Two Pair", "Pair", "High Card" };
+				for (int i = 0; i < handNames.length; i++) {
+					handOrder.put(handNames[i], i + 1);
+				}
+				//Sort players based on hand
+				Player min;
+				int minIndex;
+				for (int i = 0; i < players.size() - 1; i++) {
+					min = players.get(i);
+					minIndex = i;
+					for (int j = i; j < players.size(); j++) {
+						if (handOrder.get(players.get(j).handType).compareTo(handOrder.get(min.handType)) < 0) {
+							min = players.get(j);
+							minIndex = j;
+						}
+					}
+					Player temp = players.get(i);
+					players.set(i, players.get(minIndex));
+					players.set(i, temp);
+				}
+				ArrayList<Player> decidePlayers = new ArrayList<Player>();
+				decidePlayers.addAll(players);
+				//Removed everyone that folded
+				for (Player p: decidePlayers) {
+					if (p.hasFolded) {
+						decidePlayers.remove(p);
+					}
+				}
+				//Remove all that have a lower hand
+				String highestHand = decidePlayers.get(0).handType;
+				for (Player p: decidePlayers) {
+					if (!p.handType.equals(highestHand)) {
+						decidePlayers.remove(p);
+					}
+				}
+				//If only one person remains in this list (one person has the highest hand)
+				if (decidePlayers.size() == 1) {
+					winner(decidePlayers.get(0));
+				}
+				//If multiple people remain
+				//1: See if the higher of the hand is enough
+				try {
+					Card temp, highest = UniqueHands.highCard(UniqueHands.isolateHand(decidePlayers.get(0).handCombinedWithCenter, highestHand));
+					for (Player p: decidePlayers) {
+						temp = UniqueHands.highCard(UniqueHands.isolateHand(p.handCombinedWithCenter, highestHand));
+						if (temp.getFaceValue() < highest.getFaceValue()) {
+							decidePlayers.remove(p);
+						}
+					}
+				} catch (Exception e) {};
+				//2: Absolute worse case scenario: tie for now, figure out kickers later.
+				if (decidePlayers.size() > 1) {
+					splitPot(decidePlayers.size(), decidePlayers);
+				}
+				
+			}
+			
+			public void splitPot(int amountOfWinners, ArrayList<Player> players) {
+				int pot = Bet.pot.winner();
+				int potSplit = pot / players.size();
+				sendToAll("There are multiple winners because " + listOfPlayers(players) + " tied with the same " + players.get(0).handType + ". The pot will be split amongst them.");
+				for (Player p: players) {
+					p.bet.updateBalance(p.bet.getBalance() + potSplit);
+				}
+				keepPlaying();
+			}
+			
+			public void winner(Player player) {
+				sendToAll("Congrats, " + player.name + "! You won the round!");
+				player.bet.win();
+				keepPlaying();
+			}
+			
+			public void keepPlaying() {
+				round = -1;
+				raisedPlayer = 0;
+				currentPlayer = 0;
+				center = new CenterHand(cards.getNextCard(), cards.getNextCard());
+				currentBet = 0;
+				for (Player p: players) {
+					p.hasFolded = false;
+					p.hand = new Hand(cards.getNextCard(), cards.getNextCard());
+					p.handType = "Unassigned";
+					p.handCombinedWithCenter = new ArrayList<Card>();
+				}
+				startNewRound();
+			}
+			
+			public String listOfPlayers(ArrayList<Player> players) { 
+				String str = "";
+				for (int i = 0; i < players.size(); i++) {
+					if (i == players.size() - 1) {
+						str+=players.get(i).name;
+					} else {
+						str+=players.get(i).name + ", ";
+					}
+				}
+				return str;
+			}
+			
 			public String waitForPlayerInput(String user, String message) {
 				String theResponse = "";		
 				setEditable(user, true);
@@ -240,6 +373,7 @@ public class ChatServer implements Constants {
 						break;
 					}
 				}
+				sleep();
 				setEditable(user, false);
 				return theResponse;
 			}

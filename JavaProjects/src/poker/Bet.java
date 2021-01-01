@@ -8,7 +8,7 @@ package poker;
  */
 public class Bet implements Constants {
 	private int balance;
-	private static Pot pot = new Pot();
+	public static Pot pot = new Pot();
 	
 	public Bet() {
 		balance = INITIAL_AMOUNT;
@@ -36,6 +36,10 @@ public class Bet implements Constants {
 	
 	public int getBalance() {
 		return balance;
+	}
+	
+	public void updateBalance(int balance) {
+		this.balance = balance;
 	}
 	
 	public String toString() {

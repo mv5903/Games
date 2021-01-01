@@ -92,9 +92,12 @@ public class UniqueHands implements Constants {
 	}
 
 	public static boolean hasRoyalFlush(ArrayList<Card> cards) {
+		ArrayList<Card> temp = new ArrayList<Card>();
+		temp.addAll(cards);
 		if (hasStraightFlush(cards)) {
+			temp = isolateStraightFlush(temp);
 			cards = sortCardsByNumber(cards);
-			if (isAce(getHighStraightCard(cards))) {
+			if (isAce(getHighStraightCard(temp))) {
 				return true;
 			}
 		}
@@ -108,8 +111,12 @@ public class UniqueHands implements Constants {
 	public static boolean hasStraightFlush(ArrayList<Card> cards) {
 		if (!hasStraight(cards) || !hasFlush(cards))
 			return false;
+		cards = isolateFlush(cards);
+		if (cards.size() < 5) {
+			return false;
+		}
 		cards = sortCardsByNumber(cards);
-		// Check straight
+		cards = removeDuplicates(cards);
 		ArrayList<Card> straightCards = new ArrayList<Card>();
 		boolean straight = false;
 		for (int i = cards.size() - 5; i >= 0; i--) {
@@ -127,7 +134,7 @@ public class UniqueHands implements Constants {
 			}
 		}
 
-		return hasFlush(straightCards);
+		return straightCards.size() == 5;
 	}
 	/**
 	 * Sees if there is a four of a kind
@@ -199,38 +206,26 @@ public class UniqueHands implements Constants {
 	 */
 	public static boolean hasStraight(ArrayList<Card> cards) {
 		cards = sortCardsByNumber(cards);
+		//Remove duplicates
+		ArrayList<Card> duplicatesRemoved = new ArrayList<Card>();
+		duplicatesRemoved.addAll(cards);
+		duplicatesRemoved = removeDuplicates(duplicatesRemoved);
 		boolean straight = false;
-		for (int i = cards.size() - 5; i >= 0; i--) {
-			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
-					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
-					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
-					&& cards.get(i + 1).getFaceValue() - cards.get(i).getFaceValue() == 1;
+		if (duplicatesRemoved.size() < 5) return false;
+		for (int i = duplicatesRemoved.size() - 5; i >= 0; i--) {
+			straight = duplicatesRemoved.get(i + 4).getFaceValue() - duplicatesRemoved.get(i + 3).getFaceValue() == 1
+					&& duplicatesRemoved.get(i + 3).getFaceValue() - duplicatesRemoved.get(i + 2).getFaceValue() == 1
+					&& duplicatesRemoved.get(i + 2).getFaceValue() - duplicatesRemoved.get(i + 1).getFaceValue() == 1
+					&& duplicatesRemoved.get(i + 1).getFaceValue() - duplicatesRemoved.get(i).getFaceValue() == 1;
+			if (straight) return true;
 		}
-		return straight;
+		return false;
 	}
 
 	public static Card getHighStraightCard(ArrayList<Card> cards) {
-		boolean straight = false;
-		boolean[] straightIndexes = { false, false, false };
-		for (int i = 0; i < cards.size() - 4; i++) {
-			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
-					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
-					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
-					&& cards.get(i + 1).getFaceValue() - cards.get(i).getFaceValue() == 1;
-			if (straight) {
-				straightIndexes[i] = true;
-			}
-		}
-		int lastTrue = 0;
-		for (int i = 0; i < straightIndexes.length; i++) {
-			if (straightIndexes[i]) {
-				lastTrue = i;
-			}
-		}
-		if (straight) {
-			return cards.get(lastTrue + 4);
-		}
-		return null;
+		cards = sortCardsByNumber(cards);
+		cards = isolateStraight(cards);
+		return cards.get(cards.size() - 1);
 	}
 
 	public static boolean hasThreeOfAKind(ArrayList<Card> cards) {
@@ -284,4 +279,212 @@ public class UniqueHands implements Constants {
 		return c.equals(new Card(14, 1)) || c.equals(new Card(14, 2)) || c.equals(new Card(14, 3))
 				|| c.equals(new Card(14, 0));
 	}
-}
+	/**
+	 * Get just the cards which has the winning hand to compare.
+	 * @param cards Card to detect the given hand.
+	 * @param hand  
+	 * @return
+	 * @throws NotFoundException 
+	 */
+	public static ArrayList<Card> isolateHand(ArrayList<Card> cards, String hand) throws NotFoundException {
+		boolean canContinue = false;
+		switch (hand) {
+		case "Royal Flush": canContinue = hasRoyalFlush(cards); break;
+		case "Straight Flush": canContinue = hasStraightFlush(cards); break;
+		case "Four of a Kind": canContinue = hasFourOfAKind(cards); break;
+		case "Full House": canContinue = hasFullHouse(cards); break;
+		case "Flush": canContinue = hasFlush(cards); break;
+		case "Straight": canContinue = hasStraight(cards); break;
+		case "Three of a Kind": canContinue = hasThreeOfAKind(cards); break;
+		case "Two Pair": canContinue = hasTwoPair(cards); break;
+		case "Pair": canContinue = hasPair(cards); break;
+		case "High Card": ArrayList<Card> card = new ArrayList<Card>(); card.add(cards.get(0)); return card;
+		}
+		if (!canContinue) {
+			throw new NotFoundException("Hand not found in the given hand.");
+		}
+		switch (hand) {
+		case "Royal Flush": return isolateRoyalFlush(cards);
+		case "Straight Flush": return isolateStraightFlush(cards);
+		case "Four of a Kind": return isolateFourOfAKind(cards);
+		case "Full House": return isolateFullHouse(cards);
+		case "Flush": return isolateFlush(cards);
+		case "Straight":
+			ArrayList<Card> temp = new ArrayList<Card>();
+			temp.addAll(isolateStraight(cards));
+			if (temp.size() > 5) {
+				for (int i = temp.size() - 1; i >= 5; i--) {
+					temp.remove(i);
+				}
+			}
+			return temp;
+		case "Three of a Kind": return isolateThreeOfAKind(cards);
+		case "Two Pair": return isolateTwoPair(cards);
+		case "Pair": return isolatePair(cards);
+		}
+		return new ArrayList<Card>();
+	}
+	
+	public static ArrayList<Card> isolateRoyalFlush(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		cards = isolateFlush(cards);
+		for (int i = cards.size() - 5; i >= 0; i--) {
+			if (cards.get(i+4).getFaceValue() == 14 &&
+				cards.get(i+3).getFaceValue() == 13 &&
+				cards.get(i+2).getFaceValue() == 12 &&
+				cards.get(i+1).getFaceValue() == 11 &&
+				cards.get(i).getFaceValue() == 10) {
+				for (int j = i; j <= i+4; j++) {
+					isolatedCards.add(cards.get(j));
+				}
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateStraightFlush(ArrayList<Card> cards) {
+		cards = sortCardsByNumber(cards);
+		cards = isolateFlush(cards);
+		// Check straight
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		boolean straight = false;
+		for (int i = cards.size() - 5; i >= 0; i--) {
+			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
+					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
+					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
+					&& cards.get(i + 1).getFaceValue() - cards.get(i).getFaceValue() == 1;
+			if (straight) {
+				isolatedCards.add(cards.get(i));
+				isolatedCards.add(cards.get(i + 1));
+				isolatedCards.add(cards.get(i + 2));
+				isolatedCards.add(cards.get(i + 3));
+				isolatedCards.add(cards.get(i + 4));
+				break;
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateFourOfAKind(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		Collections.reverse(cards);
+		for (int i = 0; i < cards.size() - 3; i++) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()
+					&& cards.get(i + 1).getFaceValue() == cards.get(i + 2).getFaceValue()
+					&& cards.get(i + 2).getFaceValue() == cards.get(i + 3).getFaceValue()) {
+				isolatedCards.add(cards.get(i));
+				isolatedCards.add(cards.get(i+1));
+				isolatedCards.add(cards.get(i+2));
+				isolatedCards.add(cards.get(i+3));
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateFullHouse(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		ArrayList<Card> temp = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		for (Card c : cards) {
+			temp.add(c);
+		}
+
+		for (int i = temp.size() - 3; i >= 0; i--) {
+			if (temp.get(i).getFaceValue() == temp.get(i + 1).getFaceValue()
+					&& temp.get(i + 1).getFaceValue() == temp.get(i + 2).getFaceValue()) {
+				isolatedCards.add(cards.get(i));
+				isolatedCards.add(cards.get(i+1));
+				isolatedCards.add(cards.get(i+2));
+				temp.remove(i);
+				temp.remove(i);
+				temp.remove(i);
+				break;
+			}
+		}
+		isolatedCards.addAll(isolatePair(temp));
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateFlush(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsBySuit(cards);
+		for (int i = 0; i < cards.size() - 4; i++) {
+			if (cards.get(i).getSuit().equals(cards.get(i + 1).getSuit())
+					&& cards.get(i + 1).getSuit().equals(cards.get(i + 2).getSuit())
+					&& cards.get(i + 2).getSuit().equals(cards.get(i + 3).getSuit())
+					&& cards.get(i + 3).getSuit().equals(cards.get(i + 4).getSuit())) {
+				for (int j = i; j <= i+4; j++) {
+					isolatedCards.add(cards.get(j));
+				}
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateStraight(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		boolean straight = false;
+		for (int i = cards.size() - 5; i >= 0; i--) {
+			straight = cards.get(i + 4).getFaceValue() - cards.get(i + 3).getFaceValue() == 1
+					&& cards.get(i + 3).getFaceValue() - cards.get(i + 2).getFaceValue() == 1
+					&& cards.get(i + 2).getFaceValue() - cards.get(i + 1).getFaceValue() == 1
+					&& cards.get(i + 1).getFaceValue() - cards.get(i).getFaceValue() == 1;
+			if (straight) {
+				for (int j = i; j <= i+4; j++) {
+					isolatedCards.add(cards.get(j));
+				}
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateThreeOfAKind(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		for (int i = cards.size() - 3; i >= 0; i--) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()
+					&& cards.get(i + 1).getFaceValue() == cards.get(i + 2).getFaceValue()) {
+				isolatedCards.add(cards.get(i));
+				isolatedCards.add(cards.get(i+1));
+				isolatedCards.add(cards.get(i+2));
+				break;
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> isolateTwoPair(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		return isolatePair(cards);
+	}
+	
+	public static ArrayList<Card> isolatePair(ArrayList<Card> cards) {
+		ArrayList<Card> isolatedCards = new ArrayList<Card>();
+		cards = sortCardsByNumber(cards);
+		for (int i = cards.size() - 2; i >= 0; i--) {
+			if (cards.get(i).getFaceValue() == cards.get(i + 1).getFaceValue()) {
+				isolatedCards.add(cards.get(i));
+				isolatedCards.add(cards.get(i+1));
+			}
+		}
+		return isolatedCards;
+	}
+	
+	public static ArrayList<Card> removeDuplicates(ArrayList<Card> cards) {
+		ArrayList<Card> duplicatesRemoved = new ArrayList<Card>();
+		ArrayList<Integer> nums = new ArrayList<Integer>();
+		for (int i = 0; i < cards.size(); i++) {
+			if (nums.contains(cards.get(i).getFaceValue())) {
+				continue;
+			}
+			nums.add(cards.get(i).getFaceValue());
+			duplicatesRemoved.add(cards.get(i));
+		}
+		return duplicatesRemoved;
+	}
+	
+} 
