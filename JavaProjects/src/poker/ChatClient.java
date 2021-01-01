@@ -1,14 +1,27 @@
 package poker;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
-import javax.swing.*;
-import javax.swing.text.html.HTML;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Date;
 
-import java.awt.*;
-import java.awt.event.*;
-import static java.lang.System.out;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 @SuppressWarnings("serial")
 public class ChatClient extends JFrame implements ActionListener, KeyListener, Constants {
@@ -111,7 +124,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 				try {
 					new ChatClient(name, servername, true);
 				} catch (Exception e) {
-					out.println("Error occured creating the admin user: " + e.getMessage());
+					System.out.println("Error occured creating the admin user: " + e.getMessage());
 				}
 			} else {
 				JOptionPane.showMessageDialog(null, "Wrong password.");
@@ -137,7 +150,8 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			try {
 				while (true) {
 					line = br.readLine();
-					System.out.println(line); //DEBUGGING
+					Date d = new Date();
+					System.out.println(d.toString() + " --> " + line); //DEBUGGING
 					if (line.equals("Privately to you: allow send button")) { //enable send button
 						for (ActionListener a: btnSend.getActionListeners()) {
 							btnSend.removeActionListener(a);

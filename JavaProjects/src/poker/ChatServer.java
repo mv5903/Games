@@ -1,11 +1,14 @@
 package poker;
 
-import java.io.*;
-import java.util.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.Charset;
-
-import static java.lang.System.out;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Vector;
 
 public class ChatServer implements Constants {
 	Vector<String> users = new Vector<String>();
@@ -14,13 +17,13 @@ public class ChatServer implements Constants {
 
 	public void process() throws Exception {
 		ServerSocket server = new ServerSocket(9999, 10);
-		out.println("Server Started...");
+		System.out.println("Server Started...");
 		while (true) {
 			Socket client = server.accept();
 			HandleClient c;
 			try {
 				c = new HandleClient(client);
-				out.println(users);
+				System.out.println(users);
 				clients.add(c);
 				broadcast(c.getUserName(), "has joined! " + getRandomSuit());
 			} catch (Exception e) {
@@ -99,7 +102,7 @@ public class ChatServer implements Constants {
 						String userToSendTo = line.substring(11, line.indexOf(":"));
 						System.out.println(userToSendTo);
 						String messageToSend = line.substring(line.indexOf(":") + 1);
-						out.println(messageToSend);
+						System.out.println(messageToSend);
 						sendPrivately(userToSendTo, messageToSend);
 						continue;
 					}
@@ -155,12 +158,13 @@ public class ChatServer implements Constants {
 			
 			public void startNewRound() {
 				round++;
-				if (round != 0) {
-					center.dealNextCard(cards.getNextCard());
-					sendToAll("A card has been added to the center. The center is now: " + center);
-				}
 				if (round == 4) {
 					decideWinner();
+				}
+				if (round != 0) {
+					currentPlayer = 0;
+					center.dealNextCard(cards.getNextCard());
+					sendToAll("A card has been added to the center. The center is now: " + center);
 				}
 				raisedPlayer = 0;
 				for (Player p: players) {
@@ -310,7 +314,25 @@ public class ChatServer implements Constants {
 						}
 					}
 				} catch (Exception e) {};
-				//2: Absolute worse case scenario: tie for now, figure out kickers later.
+				//2: If everyone has high card, then the person with the highest cards in their hand wins
+				Player higherPlayer = decidePlayers.get(0);
+				Card highest = UniqueHands.highCard(decidePlayers.get(0).hand.getArrayListOfHand());
+				for (Player p: decidePlayers) {
+					if (UniqueHands.highCard(p.hand.getArrayListOfHand()).getFaceValue() > highest.getFaceValue()) {
+						higherPlayer = p;
+						highest = UniqueHands.highCard(p.hand.getArrayListOfHand());
+					}
+				}
+				for (Player p: decidePlayers) {
+					if (UniqueHands.highCard(p.hand.getArrayListOfHand()).getFaceValue() < highest.getFaceValue()) {
+						decidePlayers.remove(p);
+					}
+				}
+				if (decidePlayers.size() == 1) {
+					winner(decidePlayers.get(0));
+				}
+				
+				//3: Absolute worse case scenario: tie for now, figure out kickers later.
 				if (decidePlayers.size() > 1) {
 					splitPot(decidePlayers.size(), decidePlayers);
 				}
