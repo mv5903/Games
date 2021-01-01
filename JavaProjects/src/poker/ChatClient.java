@@ -137,6 +137,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			try {
 				while (true) {
 					line = br.readLine();
+					System.out.println(line); //DEBUGGING
 					if (line.equals("Privately to you: allow send button")) { //enable send button
 						for (ActionListener a: btnSend.getActionListeners()) {
 							btnSend.removeActionListener(a);
@@ -199,7 +200,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 						tfInput.setEditable(false);
 						continue;
 					}
-					if (line.contains(uname + "-privately: duplicate user name exists")) {
+					if (line.contains(uname + ": is duplicate!")) {
 						System.out.println(line);
 						JOptionPane.showMessageDialog(null,
 								"Sorry, someone on the server already has this name. Please join again with another name!");

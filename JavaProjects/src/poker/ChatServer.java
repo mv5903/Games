@@ -63,8 +63,8 @@ public class ChatServer implements Constants {
 			input = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
 			output = new PrintWriter(client.getOutputStream(), true, Charset.forName("UTF-8"));
 			name = input.readLine();
-			if (users.size() > 1 && users.contains(name)) {
-				sendMessage(name + "-privately", "duplicate user name exists");
+			if (users.size() >= 1 && users.contains(name)) {
+				sendMessage(name, "is duplicate!");
 				throw new Exception("Duplicate User");
 			} else {
 				users.add(name);
