@@ -90,6 +90,14 @@ public class UniqueHands implements Constants {
 		sorted.addAll(spades);
 		return sorted;
 	}
+	
+	public static ArrayList<Card> reverse(ArrayList<Card> cards) {
+		ArrayList<Card> temp = new ArrayList<Card>();
+		for (int i = cards.size() - 1; i >= 0; i--) {
+			temp.add(cards.get(i));
+		}
+		return temp;
+	}
 
 	public static boolean hasRoyalFlush(ArrayList<Card> cards) {
 		ArrayList<Card> temp = new ArrayList<Card>();

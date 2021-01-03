@@ -1,6 +1,7 @@
 package poker;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -113,26 +114,6 @@ public class ChatServer implements Constants {
 			}
 		}
 		
-		class Player {
-			Bet bet;
-			Hand hand;
-			boolean hasFolded;
-			String name;
-			String handType;
-			ArrayList<Card> handCombinedWithCenter;
-			
-			Player(Hand hand, boolean hasFolded, String name) {
-				this.hand = hand;
-				this.hasFolded = hasFolded;
-				this.name = name;
-				bet = new Bet();
-			}
-			
-			public String toString() {
-				String fold = hasFolded ? "has folded" : "has not folded";
-				return String.format("%s has %s and %s\n", name, hand, fold);
-			}
-		}
 		// CHECK RAISE LOGIC
 		class Game extends Thread {
 			ArrayList<Player> players;
@@ -260,6 +241,7 @@ public class ChatServer implements Constants {
 				//Find what hand name each player has
 				for (Player p: players) {
 					p.handType = UniqueHands.hasWhichHand(p.handCombinedWithCenter);
+					System.out.println(p.name + ": " + p.handType);
 				}
 				//Create the order of hands
 				HashMap<String, Integer> handOrder = new HashMap<String, Integer>();
@@ -268,24 +250,25 @@ public class ChatServer implements Constants {
 				for (int i = 0; i < handNames.length; i++) {
 					handOrder.put(handNames[i], i + 1);
 				}
+				
+				ArrayList<Player> decidePlayers = new ArrayList<Player>();
+				decidePlayers.addAll(players);
 				//Sort players based on hand
 				Player min;
 				int minIndex;
-				for (int i = 0; i < players.size() - 1; i++) {
-					min = players.get(i);
+				for (int i = 0; i < decidePlayers.size() - 1; i++) {
+					min = decidePlayers.get(i);
 					minIndex = i;
-					for (int j = i; j < players.size(); j++) {
-						if (handOrder.get(players.get(j).handType).compareTo(handOrder.get(min.handType)) < 0) {
-							min = players.get(j);
+					for (int j = i; j < decidePlayers.size(); j++) {
+						if (handOrder.get(decidePlayers.get(j).handType).compareTo(handOrder.get(min.handType)) < 0) {
+							min = decidePlayers.get(j);
 							minIndex = j;
 						}
 					}
-					Player temp = players.get(i);
-					players.set(i, players.get(minIndex));
-					players.set(i, temp);
+					Player temp = decidePlayers.get(i);
+					decidePlayers.set(i, decidePlayers.get(minIndex));
+					decidePlayers.set(minIndex, temp);
 				}
-				ArrayList<Player> decidePlayers = new ArrayList<Player>();
-				decidePlayers.addAll(players);
 				//Removed everyone that folded
 				for (Player p: decidePlayers) {
 					if (p.hasFolded) {
@@ -294,47 +277,134 @@ public class ChatServer implements Constants {
 				}
 				//Remove all that have a lower hand
 				String highestHand = decidePlayers.get(0).handType;
-				for (Player p: decidePlayers) {
-					if (!p.handType.equals(highestHand)) {
-						decidePlayers.remove(p);
+				System.out.println("HIGHEST HAND: " + highestHand);
+				for (int i = decidePlayers.size() - 1; i >= 0; i--) {
+					if (!decidePlayers.get(i).handType.equals(highestHand)) {
+						decidePlayers.remove(i);
 					}
 				}
 				//If only one person remains in this list (one person has the highest hand)
 				if (decidePlayers.size() == 1) {
 					winner(decidePlayers.get(0));
+					return;
 				}
 				//If multiple people remain
 				//1: See if the higher of the hand is enough
 				try {
-					Card temp, highest = UniqueHands.highCard(UniqueHands.isolateHand(decidePlayers.get(0).handCombinedWithCenter, highestHand));
-					for (Player p: decidePlayers) {
-						temp = UniqueHands.highCard(UniqueHands.isolateHand(p.handCombinedWithCenter, highestHand));
-						if (temp.getFaceValue() < highest.getFaceValue()) {
-							decidePlayers.remove(p);
+					if (highestHand.equals("Two Pair") || highestHand.equals("Full House")) {
+						//If a two pair or full house, we need to check both sets of the hand to see who wins
+						ArrayList<ArrayList<Card>> pair = new ArrayList<ArrayList<Card>>();
+						for (int i = 0; i < decidePlayers.size(); i++) {
+							pair.add(new ArrayList<Card>());
+							pair.get(i).addAll(UniqueHands.isolateHand(decidePlayers.get(i).handCombinedWithCenter, highestHand));
+							
+							//Remove the duplicates
+							for (int j = pair.get(i).size() - 2; j >= 0; j--) { 
+								if (pair.get(i).get(j).getFaceValue() == pair.get(i).get(j+1).getFaceValue()) {
+									pair.get(i).remove(j);
+								}
+							}
+							pair.set(i, UniqueHands.reverse(pair.get(i)));
+						}
+						//1: Check the first card
+						//1a: Find the highest card
+						Card highest = pair.get(0).get(0);
+						for (ArrayList<Card> c: pair) {
+							if (c.get(0).getFaceValue() > highest.getFaceValue()) {
+								highest = c.get(0);
+							}
+						}
+						//1b: Anyone who doesn't have this card gets removed
+						for (int i = pair.size() - 1; i >= 0; i--) {
+							if (pair.get(i).get(0).getFaceValue() < highest.getFaceValue()) {
+								pair.remove(i);
+								decidePlayers.remove(i);
+							}
+						}
+						//2: If multiple players still remain, look at the second card!
+						if (pair.size() == 1) {
+							winner(decidePlayers.get(0)); 
+							return;
+						}
+						//2a: Find the highest card
+						highest = pair.get(0).get(1);
+						for (ArrayList<Card> c: pair) {
+							if (c.get(1).getFaceValue() > highest.getFaceValue()) {
+								highest = c.get(1);
+							}
+						}
+						//2b: Anyone who doesn't have this card gets removed
+						for (int i = pair.size() - 1; i >= 0; i--) {
+							if (pair.get(i).get(1).getFaceValue() < highest.getFaceValue()) {
+								pair.remove(i);
+								decidePlayers.remove(i);
+							}
+						}
+						if (pair.size() == 1) {
+							winner(decidePlayers.get(0));
+						}
+					} else {
+						Card temp, higher = UniqueHands.highCard(UniqueHands.isolateHand(decidePlayers.get(0).handCombinedWithCenter, highestHand));
+						for (int i = decidePlayers.size() - 1; i >= 0; i--) {
+							temp = UniqueHands.highCard(UniqueHands.isolateHand(decidePlayers.get(i).handCombinedWithCenter, highestHand));
+							if (temp.getFaceValue() < higher.getFaceValue()) {
+								decidePlayers.remove(i);
+							}
+						}
+						//2: If everyone has high card, then the person with the highest cards in their hand wins
+						Player higherPlayer = decidePlayers.get(0);
+						Card highest = UniqueHands.highCard(decidePlayers.get(0).hand.getArrayListOfHand());
+						for (Player p: decidePlayers) {
+							if (UniqueHands.highCard(p.hand.getArrayListOfHand()).getFaceValue() > highest.getFaceValue()) {
+								higherPlayer = p;
+								highest = UniqueHands.highCard(p.hand.getArrayListOfHand());
+							}
+						}
+						for (int i = decidePlayers.size() - 1; i >= 0; i--) {
+							if (UniqueHands.highCard(decidePlayers.get(i).hand.getArrayListOfHand()).getFaceValue() < highest.getFaceValue()) {
+								decidePlayers.remove(i);
+							}
+						}
+						if (decidePlayers.size() == 1) {
+							winner(decidePlayers.get(0));
+							return;
 						}
 					}
-				} catch (Exception e) {};
-				//2: If everyone has high card, then the person with the highest cards in their hand wins
-				Player higherPlayer = decidePlayers.get(0);
-				Card highest = UniqueHands.highCard(decidePlayers.get(0).hand.getArrayListOfHand());
-				for (Player p: decidePlayers) {
-					if (UniqueHands.highCard(p.hand.getArrayListOfHand()).getFaceValue() > highest.getFaceValue()) {
-						higherPlayer = p;
-						highest = UniqueHands.highCard(p.hand.getArrayListOfHand());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				//3: Find 5 highest card combo by adding first five cards
+				int highestSum = 0;
+				for (int i = decidePlayers.size() - 1; i >= 0; i--) {
+					int tempSum = 0;
+					decidePlayers.get(i).handCombinedWithCenter = UniqueHands.reverse(UniqueHands.sortCardsByNumber(decidePlayers.get(i).handCombinedWithCenter));
+					for (int j = 0; j < 5; j++) {
+						tempSum+=decidePlayers.get(i).handCombinedWithCenter.get(j).getFaceValue();
+					}
+					if (tempSum > highestSum) {
+						highestSum = tempSum;
 					}
 				}
-				for (Player p: decidePlayers) {
-					if (UniqueHands.highCard(p.hand.getArrayListOfHand()).getFaceValue() < highest.getFaceValue()) {
-						decidePlayers.remove(p);
+				for (int i = decidePlayers.size() - 1; i >= 0; i--) {
+					int tempSum = 0;
+					decidePlayers.get(i).handCombinedWithCenter = UniqueHands.reverse(UniqueHands.sortCardsByNumber(decidePlayers.get(i).handCombinedWithCenter));
+					for (int j = 0; j < 5; j++) {
+						tempSum+=decidePlayers.get(i).handCombinedWithCenter.get(j).getFaceValue();
 					}
-				}
-				if (decidePlayers.size() == 1) {
-					winner(decidePlayers.get(0));
+					if (tempSum < highestSum) {
+						decidePlayers.remove(i);
+					}
 				}
 				
-				//3: Absolute worse case scenario: tie for now, figure out kickers later.
+				if (decidePlayers.size() == 1) {
+					winner(decidePlayers.get(0));
+					return;
+				}
+				
+				//4: Absolute worse case scenario: tie for now, figure out kickers later.
 				if (decidePlayers.size() > 1) {
 					splitPot(decidePlayers.size(), decidePlayers);
+					return;
 				}
 				
 			}
@@ -417,7 +487,7 @@ public class ChatServer implements Constants {
 			
 			public void sleep() {
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(100);
 				} catch (InterruptedException e) {};
 			}
 		}
