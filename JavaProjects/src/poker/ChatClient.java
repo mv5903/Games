@@ -1,8 +1,11 @@
 package poker;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -13,8 +16,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Date;
+import java.nio.file.FileSystems;
 
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -22,16 +27,19 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+import javax.swing.text.DefaultCaret;
 
 @SuppressWarnings("serial")
 public class ChatClient extends JFrame implements ActionListener, KeyListener, Constants {
 	String uname;
 	PrintWriter pw;
 	BufferedReader br;
-	JTextArea taMessages;
+	JTextArea taMessages, cardView, centerView, potView, balanceView, currentPlayer;
 	JTextField tfInput;
 	JButton btnSend, btnExit;
 	Socket client;
+	Font font = new Font("Segoe UI Symbol", Font.PLAIN, 20);
 	final static String adminPassword = "Matt5903!";
 	boolean isAdmin;
 
@@ -48,48 +56,163 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 	}
 
 	public void buildInterface() {
+		//Send Button
 		btnSend = new JButton("Send");
-		btnExit = new JButton("Exit");
-		taMessages = new JTextArea();
-		taMessages.setRows(10);
-		taMessages.setColumns(50);
-		taMessages.setEditable(false);
-		taMessages.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
-		tfInput = new JTextField(50);
-		tfInput.setEditable(false);
-		tfInput.setBackground(Color.LIGHT_GRAY); //grey out area
-		tfInput.setText("User input disabled.");
-		JScrollPane sp = new JScrollPane(taMessages, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		add(sp, "Center");
-		setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
-		JPanel bp = new JPanel(new FlowLayout());
-		bp.add(tfInput);
-		bp.add(btnSend);
-		bp.add(btnExit);
-		add(bp, "South");
-		if (uname.equals("admin")) {
-			btnSend.addActionListener(this);
-			tfInput.addKeyListener(this);
-			tfInput.setBackground(Color.WHITE);
-			tfInput.setText("");
-			tfInput.setEditable(true);
-		}
-		btnExit.addActionListener(this);
-		setSize(500, 300);
-		setVisible(true);
-		addWindowListener(new WindowAdapter() {
+		btnSend.setBackground(Color.black);
+		btnSend.setForeground(Color.yellow);
+		btnSend.setPreferredSize(new Dimension(80, 46));
+		btnSend.setBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white));
+		btnSend.addActionListener(new ActionListener() {
 			@Override
-			public void windowClosing(WindowEvent windowEvent) {
-				pw.println("has left the game!");
-				pw.println("end");
+			public void actionPerformed(ActionEvent e) {
+				pw.println(tfInput.getText());
+			}
+		});
+		
+		//Exit Button
+		btnExit = new JButton("Exit");
+		btnExit.setBackground(Color.black);
+		btnExit.setForeground(Color.red);
+		btnExit.setBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white));
+		btnExit.setPreferredSize(new Dimension(80, 46));
+		btnExit.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
-		setTitle("Poker Game: " + uname);
-		setFont(new Font("Segoe UI Symbol", Font.PLAIN, 18));
-		pack();
+		
+		//Messages View Text Area
+		taMessages = new JTextArea();
+		taMessages.setBackground(Color.black);
+		taMessages.setForeground(Color.white);
+		taMessages.setRows(20);
+		taMessages.setColumns(52);
+		taMessages.setEditable(false);
+		taMessages.setFont(font);
+		taMessages.setWrapStyleWord(true);
+		taMessages.setLineWrap(true);
+		taMessages.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		DefaultCaret caret = (DefaultCaret) taMessages.getCaret();
+		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+		
+		//Scroll Pane
+		JScrollPane sp = new JScrollPane(taMessages, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		sp.getVerticalScrollBar().setUI(new BasicScrollBarUI() {
+			protected void configureScrollBarColors() {
+				this.thumbColor = Color.gray;
+				this.trackColor = Color.lightGray;
+			}
+		});
+		sp.setBorder(BorderFactory.createMatteBorder(10, 10, 10, 10, Color.decode("#2B2D2F")));
+		
+		//Player Hand View
+		cardView = new JTextArea();
+		cardView.setText("Your Hand:\n" + DEFAULT_HAND);
+		cardView.setBackground(Color.black);
+		cardView.setForeground(Color.white);
+		cardView.setEditable(false);
+		cardView.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		
+		//Center Cards View
+		centerView = new JTextArea();
+		centerView.setText("Center:\n" + DEFAULT_CENTER);
+		centerView.setBackground(Color.black);
+		centerView.setForeground(Color.white);
+		centerView.setEditable(false);
+		centerView.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		
+		//Player balance view
+		balanceView = new JTextArea();
+		balanceView.setFont(font);
+		balanceView.setText("Balance\n");
+		balanceView.setBackground(Color.black);
+		balanceView.setForeground(Color.white);
+		balanceView.setEditable(false);
+		balanceView.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		balanceView.setLineWrap(true);
+		balanceView.setWrapStyleWord(true);
+		
+		//Pot view
+		potView = new JTextArea();
+		potView.setFont(font);
+		potView.setText("Pot\n");
+		potView.setBackground(Color.black);
+		potView.setForeground(Color.white);
+		potView.setEditable(false);
+		potView.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		potView.setLineWrap(true);
+		potView.setWrapStyleWord(true);
+		
+		//Current Player
+		currentPlayer = new JTextArea();
+		currentPlayer.setFont(font);
+		currentPlayer.setText("Current Player\n");
+		currentPlayer.setBackground(Color.black);
+		currentPlayer.setForeground(Color.white);
+		currentPlayer.setEditable(false);
+		currentPlayer.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+		currentPlayer.setLineWrap(true);
+		currentPlayer.setWrapStyleWord(true);
+		
+		//Textfield to enter chat messages
+		tfInput = new JTextField(50);
+		if (!uname.equals("admin")) {
+			tfInput.setEditable(false);
+			tfInput.setBackground(Color.LIGHT_GRAY);
+			tfInput.setText("User input disabled.");
+		}
+		tfInput.setPreferredSize(new Dimension(300, 46));
+		tfInput.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
 		tfInput.requestFocusInWindow();
+		tfInput.addKeyListener(this);
+		
+		//Right JPanel
+		JPanel rp = new JPanel(new BorderLayout());
+		rp.add(potView, "North");
+		rp.add(currentPlayer, "Center");
+		rp.add(balanceView, "South");
+		rp.setBorder(BorderFactory.createMatteBorder(3, 3, 3, 14, Color.decode("#2B2D2F")));
+		
+		//Top JPanel contains the Scroll Pane which contains taMessages
+		JPanel tp = new JPanel(new FlowLayout());
+		tp.add(sp);
+		tp.add(rp);
+		tp.setBackground(Color.decode("#2B2D2F"));
+		tp.setBorder(BorderFactory.createMatteBorder(10, 10, 10, 10, Color.blue));
+		
+		//Bottom JPanel contains the rest
+		JPanel bp = new JPanel(new FlowLayout());
+		bp.add(cardView);
+		bp.add(centerView);
+		bp.add(tfInput);
+		bp.add(btnSend);
+		bp.add(btnExit);
+		bp.setBackground(Color.black);
+		bp.setBorder(BorderFactory.createMatteBorder(5, 5, 5, 5, Color.black));
+		
+		
+		//Main Frame
+		ImageIcon img = new ImageIcon(FileSystems.getDefault().getPath("").toAbsolutePath() + "\\src\\poker\\images\\icon.png");
+		setIconImage(img.getImage());
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent windowEvent) {
+				System.exit(0);
+			}
+		});
+		setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+		setResizable(false);
+		setLayout(new BorderLayout(0, 0));
+		setFont(font);
+		setPreferredSize(new Dimension(1175, 700));
+		setLocationRelativeTo(null);
+		add(tp, "North");
+		add(bp, "South");
+		setTitle("Poker Game - " + uname);
+		pack();	
+		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
+		setVisible(true);
 	}
 
 	public void actionPerformed(ActionEvent evt) {
@@ -138,10 +261,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 						"An exception has been raised:\n" + ex.getMessage() + "\nProgram will now terminate.");
 			}
 		}
-
-		// NetIndex.DELETE(name);
-
-	} // end of main
+	}
 
 	// inner class for Messages Thread
 	class MessagesThread extends Thread {
@@ -150,13 +270,33 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			try {
 				while (true) {
 					line = br.readLine();
-					Date d = new Date();
-					System.out.println(d.toString() + " --> " + line); //DEBUGGING
-					if (line.equals("Privately to you: allow send button")) { //enable send button
-						for (ActionListener a: btnSend.getActionListeners()) {
+					if (line.contains("DATA")) {
+						System.out.println(line);
+						String pot = line.substring(0, line.indexOf(";"));
+						String center = line.substring(line.indexOf(";") + 1, line.indexOf("~"));			
+						String currentPlayerName = line.substring(line.indexOf("~") + 1, line.indexOf("^"));
+						String balance = line.substring(line.indexOf("^") + 1, line.indexOf(">"));
+						String hand = line.substring(line.indexOf(">") + 1);
+						
+						pot = pot.substring(pot.indexOf(":") + 1);
+						center = center.substring(center.indexOf(":") + 1);
+						currentPlayerName = currentPlayerName.substring(currentPlayerName.indexOf(":") + 1);
+						balance = balance.substring(balance.indexOf(":") + 1);
+						hand = hand.substring(hand.indexOf(":") + 1);
+						
+						System.out.println(pot + center + currentPlayerName + balance + hand);
+						potView.setText("Pot\n" + pot);
+						balanceView.setText("Your Balance\n" + balance);
+						currentPlayer.setText("Current Player" + currentPlayerName);
+						cardView.setText("Your Hand\n" + hand);
+						centerView.setText("Center\n" + center);
+						continue;
+					}
+					if (line.equals("Privately to you: allow send button")) { // enable send button
+						for (ActionListener a : btnSend.getActionListeners()) {
 							btnSend.removeActionListener(a);
 						}
-						for (KeyListener a: tfInput.getKeyListeners()) {
+						for (KeyListener a : tfInput.getKeyListeners()) {
 							tfInput.removeKeyListener(a);
 						}
 						btnSend.addActionListener(new ActionListener() {
@@ -171,14 +311,14 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 									pw.println(tfInput.getText());
 								}
 							}
-							
+
 						});
 						tfInput.addKeyListener(new KeyListener() {
 
 							@Override
 							public void keyTyped(KeyEvent e) {
 								// TODO Auto-generated method stub
-								
+
 							}
 
 							@Override
@@ -193,9 +333,9 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 							@Override
 							public void keyReleased(KeyEvent e) {
 								// TODO Auto-generated method stub
-								
+
 							}
-							
+
 						});
 						tfInput.setBackground(Color.WHITE);
 						tfInput.setText("");
@@ -203,13 +343,13 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 						continue;
 					}
 					if (line.equals("Privately to you: disable send button")) {
-						for (ActionListener a: btnSend.getActionListeners()) {
+						for (ActionListener a : btnSend.getActionListeners()) {
 							btnSend.removeActionListener(a);
 						}
-						for (KeyListener a: tfInput.getKeyListeners()) {
+						for (KeyListener a : tfInput.getKeyListeners()) {
 							tfInput.removeKeyListener(a);
 						}
-						tfInput.setBackground(Color.LIGHT_GRAY); //grey out area
+						tfInput.setBackground(Color.LIGHT_GRAY); // grey out area
 						tfInput.setText("User input disabled.");
 						tfInput.setEditable(false);
 						continue;
@@ -223,6 +363,8 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 					taMessages.append(line + "\n");
 				} // end of while
 			} catch (Exception ex) {
+				ex.printStackTrace();
+				System.out.println(ex.getMessage());
 			}
 		}
 

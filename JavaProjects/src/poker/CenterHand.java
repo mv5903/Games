@@ -24,6 +24,14 @@ public class CenterHand {
 	}
 	
 	public String toString() {
-		return hand.toString();
+		if (hand.size() == 2) {
+			return "[ ? , ? , ? , ? , ? ]";
+		} else if (hand.size() == 3) {
+			return String.format("[%s, %s, %s, ? , ? ]", hand.get(0), hand.get(1), hand.get(2));
+		} else if (hand.size() == 4) {
+			return String.format("[%s, %s, %s, %s, ? ]", hand.get(0), hand.get(1), hand.get(2), hand.get(3));
+		} else {
+			return hand.toString();
+		}
 	}
 }

@@ -14,4 +14,6 @@ public interface Constants {
 	final char DIAMONDS = '\u2666';
 	final String DUPLICATE_NAME_ERROR = " Someone with that name already exists. Please join again with another username.";
     final String adminPassword = "Matt5903!";
+    final String DEFAULT_CENTER = "[ ? , ? , ? , ? , ? ]";
+    final String DEFAULT_HAND = "[ ? , ? ]";
 }

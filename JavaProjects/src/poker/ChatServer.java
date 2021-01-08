@@ -15,6 +15,11 @@ public class ChatServer implements Constants {
 	Vector<String> users = new Vector<String>();
 	Vector<HandleClient> clients = new Vector<HandleClient>();
 	String response = "";
+	ArrayList<Player> players;
+	DeckOfCards cards;
+	CenterHand center;
+	boolean hasStarted = false;
+	
 
 	public void process() throws Exception {
 		ServerSocket server = new ServerSocket(9999, 10);
@@ -51,9 +56,17 @@ public class ChatServer implements Constants {
 	}
 	
 	public void sendPrivately(String user, String message) {
-		for (HandleClient client: clients) {
-			if (client.getUserName().equals(user)) {
-				client.sendMessage("Privately to you", message);
+		int counter = 0;
+		for (int i = 0; i < clients.size(); i++) {
+			if (hasStarted) {
+				if (!(clients.get(i).name.equals("admin"))) {
+					System.out.println(clients.get(i).name);
+					clients.get(i).sendMessage("DATA", String.format("POT:%d;CENTER:%s~CP:%s^BAL:%d>HAND:%s", Integer.parseInt(Bet.pot.toString()), center.toString(), players.get(counter).name, players.get(counter).bet.getBalance(), players.get(counter).hand.toString()));
+					counter++;
+				}
+			}
+			if (clients.get(i).getUserName().equals(user)) {
+				clients.get(i).sendMessage("Privately to you", message);
 			}
  		}
 	}
@@ -114,11 +127,7 @@ public class ChatServer implements Constants {
 			}
 		}
 		
-		// CHECK RAISE LOGIC
 		class Game extends Thread {
-			ArrayList<Player> players;
-			DeckOfCards cards;
-			CenterHand center;
 			int currentPlayer = 0, raisedPlayer = 0, totalPlayers = 0, currentBet = 0, round = -1;
 			
 			public void run() {
@@ -139,6 +148,7 @@ public class ChatServer implements Constants {
 			
 			public void startNewRound() {
 				round++;
+				currentBet = 0;
 				if (round == 4) {
 					decideWinner();
 				}
@@ -149,57 +159,106 @@ public class ChatServer implements Constants {
 				}
 				raisedPlayer = 0;
 				for (Player p: players) {
-					sendPrivately(p.name, "Your hand is " + p.hand + ".");
+					sendPrivately(p.name, "Hand: " + p.hand);
+					sleep();
 					setEditable(p.name, false);
+				}
+				hasStarted = true;
+				if (round == 0) {
+					sendPrivately(players.get(0).name, "Welcome to Poker!");
 				}
 				takeTurn();
 				while (true) {
+					if (allFoldedButOne()) {
+						for (Player p: players) {
+							if (!p.hasFolded) {
+								winner(p);
+							}
+						}
+					}
 					decideNextPlayer();
 				}
 			}
 			
 			public void takeTurn() {
 				if (!players.get(currentPlayer).hasFolded) {
+					response = "";
+					if (players.get(currentPlayer).bet.getBalance() == 0 && currentBet > 0) {
+						sendPrivately(players.get(currentPlayer).name, "Looks like you don't have any money. You will now be folded.");
+						players.get(currentPlayer).hasFolded = true;
+						return;
+					}
+					if (players.get(currentPlayer).bet.getBalance() < currentBet) {
+						String selection = waitForPlayerInput(players.get(currentPlayer).name, "Sorry " + players.get(currentPlayer).name + ", you have to go all in or fold. Please type \"all in\" or type \"fold\" to fold.");
+						if (selection.equalsIgnoreCase("all in")) {
+							players.get(currentPlayer).bet.bet(players.get(currentPlayer).bet.getBalance());
+							sendToAll(players.get(currentPlayer).name + " is poor, so he forcefully went all in.");
+							return;
+						} else if (selection.equalsIgnoreCase("fold")) {
+							players.get(currentPlayer).hasFolded = true;
+							return;
+						} else {
+							sendPrivately(players.get(currentPlayer).name, "Sorry, I don't know what you entered. Please try again.");
+							takeTurn();
+						}
+					}
 					String selection = waitForPlayerInput(players.get(currentPlayer).name, players.get(currentPlayer).name + " Place a bet of " + currentBet + ", type \"raise\" to raise, or type \"fold\" to fold. Your current balance: " + players.get(currentPlayer).bet.getBalance());
 					if (selection.equalsIgnoreCase("fold")) {
 						players.get(currentPlayer).hasFolded = true;
+						sendToAll(players.get(currentPlayer).name + " has folded!");
 						return;
 					} else if (selection.equalsIgnoreCase("raise")) {
 						while (true) {
 							raisedPlayer = currentPlayer;
+							response = "";
 							String raiseAmount = waitForPlayerInput(players.get(currentPlayer).name, "How much would you like to raise by?");
-							int amountRaised = 0;
-							try {
-								amountRaised = Integer.parseInt(raiseAmount);
-							} catch (Exception e) {
+							int amountRaised = grabInt(raiseAmount);
+							if (amountRaised == -1) {
 								sendPrivately(players.get(currentPlayer).name, "Looks like you entered something other than a number. Please try again");
-								continue;
-							}
-							if (amountRaised == 0) {
+								takeTurn();
+							} else if (amountRaised == 0) {
 								sendPrivately(players.get(currentPlayer).name, "Uh, why did you raise in the first place?");
 								takeTurn();
+							} else if (amountRaised > players.get(currentPlayer).bet.getBalance()) {
+								sendPrivately(players.get(currentPlayer).name, "This is more than you have. Please bet again.");
+								takeTurn();
+							} else {
+								currentBet+=amountRaised;
+								sendToAll(players.get(currentPlayer).name + " raised the bet by " + amountRaised + "! All remaining players must call " + currentBet + " to continue playing this round.");
+								return;
 							}
-							sendToAll(players.get(currentPlayer).name + " raised the bet by " + amountRaised + "! All remaining players must call " + currentBet + " to continue playing this round.");
-							currentBet+=amountRaised;
-							return;
 						}
 					} else {
-						int amount;
-						try {
-							amount = Integer.parseInt(selection);
-						} catch (Exception e) {
+						int amount = grabInt(selection);
+						if (amount == -1) {
 							sendPrivately(players.get(currentPlayer).name, "Sorry, you entered something that is not recognized. Please try again.");
 							takeTurn();
-						}
-						amount = Integer.parseInt(selection);
-						if (amount != currentBet) {
+						} else if (amount != currentBet) {
 							sendPrivately(players.get(currentPlayer).name, "Sorry, you must enter the current amount or you may type \"raise\" to indicate that you want to raise.");
 							takeTurn();
+						} else if (amount == players.get(currentPlayer).bet.getBalance()) {
+							sendPrivately(players.get(currentPlayer).name, "Going all in, huh?");
+							return;
+						} 
+						else {
+							players.get(currentPlayer).bet.bet(amount);
+							sendToAll(players.get(currentPlayer).name + " has checked.");
+							return;
 						}
-						players.get(currentPlayer).bet.bet(amount);
-						return;
 					}
 				}
+			}
+			
+			public int grabInt(String str) {
+				String toReturn = "";
+				for (char c: str.toCharArray()) {
+					if (!Character.isDigit(c)) {
+						return -1;
+					} else {
+						toReturn+=c;
+					}
+				}
+				return Integer.parseInt(toReturn);
 			}
 			
 			public void decideNextPlayer() {
@@ -215,20 +274,19 @@ public class ChatServer implements Constants {
 				} else {
 					takeTurn();
 				}
-				
 			}
-			
+		
 			public boolean allFoldedButOne() {
 				boolean oneFolded = false;
 				for (Player p: players) {
-					if (oneFolded) {
+					if (p.hasFolded && oneFolded) {
 						return false;
 					}
 					if (p.hasFolded) {
 						oneFolded = true;
 					}
 				}
-				return true;
+				return oneFolded;
 			}
 			
 			public void decideWinner() {
@@ -487,7 +545,7 @@ public class ChatServer implements Constants {
 			
 			public void sleep() {
 				try {
-					Thread.sleep(100);
+					Thread.sleep(20);
 				} catch (InterruptedException e) {};
 			}
 		}
