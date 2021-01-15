@@ -1,3 +1,5 @@
+package main;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -30,7 +32,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.text.DefaultCaret;
 
 @SuppressWarnings("serial")
-public class ChatClient extends JFrame implements ActionListener, KeyListener, Constants {
+public class Client extends JFrame implements ActionListener, KeyListener, Constants {
 	String uname;
 	PrintWriter pw;
 	BufferedReader br;
@@ -41,7 +43,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 	Font font = new Font("Segoe UI Symbol", Font.PLAIN, 20);
 	boolean isAdmin;
 
-	public ChatClient(String uname, String servername, boolean isAdmin) throws Exception {
+	public Client(String uname, String servername, boolean isAdmin) throws Exception {
 		super(uname); // set title for frame
 		this.isAdmin = isAdmin;
 		this.uname = uname;
@@ -235,7 +237,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 					JOptionPane.WARNING_MESSAGE);
 			if (password.equals(adminPassword)) {
 				try {
-					new ChatClient(name, servername, true);
+					new Client(name, servername, true);
 				} catch (Exception e) {
 					System.out.println("Error occured creating the admin user: " + e.getMessage());
 				}
@@ -245,7 +247,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 			}
 		} else {
 			try {
-				new ChatClient(name, servername, false);
+				new Client(name, servername, false);
 			} catch (Exception ex) {
 				JOptionPane.showMessageDialog(null,
 						"An exception has been raised:\n" + ex.getMessage() + "\nProgram will now terminate.");

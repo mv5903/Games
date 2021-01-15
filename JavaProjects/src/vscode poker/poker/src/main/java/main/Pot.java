@@ -1,4 +1,4 @@
-
+package main;
 //♠
 /**
  * Keeps track of the pot that players place their bets in.

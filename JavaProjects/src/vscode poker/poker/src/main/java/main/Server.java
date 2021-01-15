@@ -1,3 +1,5 @@
+package main;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -8,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Vector;
 
-public class ChatServer implements Constants {
+public class Server implements Constants {
 	Vector<String> users = new Vector<String>();
 	Vector<HandleClient> clients = new Vector<HandleClient>();
 	String response = "";
@@ -44,7 +46,7 @@ public class ChatServer implements Constants {
 	}
 
 	public static void main(String... args) throws Exception {
-		new ChatServer().process();
+		new Server().process();
 	} // end of main
 	
 	public void broadcast(String user, String message) {

@@ -1,4 +1,4 @@
-import java.awt.BorderLayout;
+package main;import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;

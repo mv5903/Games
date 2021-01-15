@@ -1,4 +1,4 @@
-
+package main;
 // ♠
 /**
  * Defines what is shown for each suit, and the starting amount for

@@ -1,3 +1,4 @@
+package main;
 //♠
 /**
  * Each card contains the face value, the suit it represents, and

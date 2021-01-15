@@ -1,4 +1,4 @@
-
+package main;
 
 import java.util.Scanner;
 
@@ -13,12 +13,12 @@ public class NetIndex {
 		if (kbd.next().equalsIgnoreCase("yes")) {
 			System.out.println("Ok. Please follow the instructions on GitHub to learn how to create a server.");
 			try {
-				ChatServer.main((String[])null);
+				Server.main((String[])null);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} else {
-			ChatClient.main(null);
+			Client.main(null);
 		}
 	}
 }

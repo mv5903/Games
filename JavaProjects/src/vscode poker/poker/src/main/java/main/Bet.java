@@ -1,3 +1,5 @@
+package main;
+
 // ♠
 /**
  * A bet is created for each player, and various events in the
