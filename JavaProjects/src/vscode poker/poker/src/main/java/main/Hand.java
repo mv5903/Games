@@ -1,8 +1,6 @@
-package poker;
 import java.util.ArrayList;
 //♠
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Each player's hand is given two cards. Not much else to it, really.

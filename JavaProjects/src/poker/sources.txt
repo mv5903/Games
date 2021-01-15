@@ -1,6 +1,0 @@
-Bet.java	 DeckOfCards.java	      Server.java
-Card.java	 Hand.java		      Test.java
-CenterHand.java  Index.java		      UniqueHands.java
-ChatClient.java  NetIndex.java		      UserThread.java
-ChatServer.java  ParameterStringBuilder.java
-Constants.java	 Pot.java

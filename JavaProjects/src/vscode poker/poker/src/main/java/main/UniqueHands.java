@@ -1,5 +1,3 @@
-package poker;
-
 import java.util.ArrayList;
 import java.util.Collections;
 /**
@@ -465,7 +463,6 @@ public class UniqueHands implements Constants {
 	}
 	
 	public static ArrayList<Card> isolateTwoPair(ArrayList<Card> cards) {
-		ArrayList<Card> isolatedCards = new ArrayList<Card>();
 		cards = sortCardsByNumber(cards);
 		return isolatePair(cards);
 	}

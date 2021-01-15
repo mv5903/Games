@@ -1,4 +1,3 @@
-package poker;
 // ♠
 /**
  * A bet is created for each player, and various events in the
@@ -6,12 +5,15 @@ package poker;
  * @author matt
  *
  */
+@SuppressWarnings("unused")
 public class Bet implements Constants {
 	private int balance;
+	private int roundBet;
 	public static Pot pot = new Pot();
 	
 	public Bet() {
 		balance = INITIAL_AMOUNT;
+		roundBet = 0;
 	}
 	/**
 	 * When someone makes a bet, the amount they bet gets removed from
@@ -24,6 +26,7 @@ public class Bet implements Constants {
 		} else {
 			balance -= amount;
 			pot.add(amount);
+			roundBet+=amount;
 		}
 	}
 	/**
@@ -32,6 +35,10 @@ public class Bet implements Constants {
 	 */
 	public void win() {
 		balance += pot.winner();
+	}
+	
+	public void resetRoundBet() {
+		roundBet = 0;
 	}
 	
 	public int getBalance() {

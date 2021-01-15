@@ -1,4 +1,4 @@
-package poker;
+
 //♠
 /**
  * Keeps track of the pot that players place their bets in.
@@ -17,7 +17,7 @@ public class Pot {
 	}
 	
 	public void subtract(int amount) {
-		this.amount=+amount;
+		this.amount-=amount;
 	}
 	
 	public int winner() {

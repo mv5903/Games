@@ -1,5 +1,3 @@
-package poker;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -17,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.FileSystems;
+import java.util.Date;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -40,7 +39,6 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 	JButton btnSend, btnExit;
 	Socket client;
 	Font font = new Font("Segoe UI Symbol", Font.PLAIN, 20);
-	final static String adminPassword = "Matt5903!";
 	boolean isAdmin;
 
 	public ChatClient(String uname, String servername, boolean isAdmin) throws Exception {
@@ -78,6 +76,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		btnExit.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				pw.println("leave");
 				System.exit(0);
 			}
 		});
@@ -160,7 +159,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		if (!uname.equals("admin")) {
 			tfInput.setEditable(false);
 			tfInput.setBackground(Color.LIGHT_GRAY);
-			tfInput.setText("User input disabled.");
+			tfInput.setText("User input disabled. Wait for your turn!");
 		}
 		tfInput.setPreferredSize(new Dimension(300, 46));
 		tfInput.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(3, 3, 3, 3, Color.white), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
@@ -197,6 +196,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		setIconImage(img.getImage());
 		addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
+				pw.println("leave");
 				System.exit(0);
 			}
 		});
@@ -213,16 +213,6 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 		setVisible(true);
-	}
-
-	public void actionPerformed(ActionEvent evt) {
-		if (evt.getSource() == btnExit) {
-			pw.println("end"); // send end to server so that server know about the termination
-			System.exit(0);
-		} else {
-			// send message to server
-			pw.println(tfInput.getText());
-		}
 	}
 
 	public void send(String text) {
@@ -271,8 +261,11 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 				while (true) {
 					line = br.readLine();
 					if (line.contains("DATA")) {
+						Date time = new Date();
+						System.out.println(time.toString());
+						
 						System.out.println(line);
-						String pot = line.substring(0, line.indexOf(";"));
+						String pot = line.substring(line.indexOf(":") + 1, line.indexOf(";"));
 						String center = line.substring(line.indexOf(";") + 1, line.indexOf("~"));			
 						String currentPlayerName = line.substring(line.indexOf("~") + 1, line.indexOf("^"));
 						String balance = line.substring(line.indexOf("^") + 1, line.indexOf(">"));
@@ -284,12 +277,17 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 						balance = balance.substring(balance.indexOf(":") + 1);
 						hand = hand.substring(hand.indexOf(":") + 1);
 						
-						System.out.println(pot + center + currentPlayerName + balance + hand);
-						potView.setText("Pot\n" + pot);
-						balanceView.setText("Your Balance\n" + balance);
-						currentPlayer.setText("Current Player" + currentPlayerName);
-						cardView.setText("Your Hand\n" + hand);
-						centerView.setText("Center\n" + center);
+						System.out.println("Pot: " + pot);
+						System.out.println("Center: " + center);
+						System.out.println("Player Name: " + currentPlayerName);
+						System.out.println("Balance: " + balance);
+						System.out.println("Hand: " + hand);
+						
+						potView.setText("Pot:\n" + pot);
+						balanceView.setText("Your Balance:\n" + balance);
+						currentPlayer.setText("Current Player:\n" + currentPlayerName);
+						cardView.setText("Your Hand:\n" + hand);
+						centerView.setText("Center:\n" + center);
 						continue;
 					}
 					if (line.equals("Privately to you: allow send button")) { // enable send button
@@ -317,7 +315,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 
 							@Override
 							public void keyTyped(KeyEvent e) {
-								// TODO Auto-generated method stub
+
 
 							}
 
@@ -332,7 +330,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 
 							@Override
 							public void keyReleased(KeyEvent e) {
-								// TODO Auto-generated method stub
+
 
 							}
 
@@ -350,7 +348,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 							tfInput.removeKeyListener(a);
 						}
 						tfInput.setBackground(Color.LIGHT_GRAY); // grey out area
-						tfInput.setText("User input disabled.");
+						tfInput.setText("User input disabled. Wait for your turn!");
 						tfInput.setEditable(false);
 						continue;
 					}
@@ -360,6 +358,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 								"Sorry, someone on the server already has this name. Please join again with another name!");
 						System.exit(0);
 					}
+					line = line.substring(line.indexOf(":") + 1);
 					taMessages.append(line + "\n");
 				} // end of while
 			} catch (Exception ex) {
@@ -384,7 +383,7 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 
 	@Override
 	public void keyTyped(KeyEvent e) {
-		// TODO Auto-generated method stub
+
 
 	}
 
@@ -400,7 +399,13 @@ public class ChatClient extends JFrame implements ActionListener, KeyListener, C
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		// TODO Auto-generated method stub
 
+
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+
+		
 	}
 } // end of client
