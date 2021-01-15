@@ -1,4 +1,8 @@
 /.metadata/
+/.settings/
 /RemoteSystemsTempFiles/
 /JavaProjects/src/poker/Test.java
 *.class
+*.zip
+*.classpath
+*.project
